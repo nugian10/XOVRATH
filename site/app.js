@@ -104,13 +104,13 @@
      (slow or rate-limited public RPC), the static counts stay as they
      are — the page never shows a wrong number. */
   const TOTAL_SUPPLY_SELECTOR = "0x18160ddd"; // totalSupply()
-  const RPC_URLS = ["https://bsc-dataseed.binance.org/", "https://bsc.publicnode.com"];
+  const RPC_URLS = ["https://bsc-dataseed.binance.org/", "https://bsc-dataseed1.binance.org/", "https://bsc.publicnode.com"];
   async function fetchMinted() {
     if (!CFG.CONTRACT_ADDRESS) return null;
     for (const url of RPC_URLS) {
       try {
         const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 6000);
+        const timer = setTimeout(() => ctrl.abort(), 12000);
         const res = await fetch(url, {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -129,6 +129,14 @@
       } catch (e) { /* try the next RPC */ }
     }
     return null;
+  }
+  // One retry: public RPCs fail transiently (rate limits, slow 4G), and
+  // a failed first attempt used to leave the static 0 on screen forever.
+  function refreshMinted() {
+    fetchMinted().then((n) => {
+      if (n == null) setTimeout(() => fetchMinted().then(paintMinted), 10000);
+      else paintMinted(n);
+    });
   }
   function paintMinted(n) {
     if (n == null) return;
@@ -157,7 +165,8 @@
     set("total", Number(total).toLocaleString("en-US"));
     set("classifications", String(classCount));
     set("published", known > 0 ? Number(known).toLocaleString("en-US") : "—");
-    set("supply", "0");
+    // "supply" is left as the static fallback (last verified count) until
+    // the live on-chain read paints it — never reset to 0 here.
     const note = $("#stats-note");
     if (note) {
       note.textContent = (known === 0
@@ -167,7 +176,7 @@
           : "All " + CFG.TOTAL_SUPPLY.toLocaleString("en-US") + " artworks published.")
         + " Mint is live.";
     }
-    fetchMinted().then(paintMinted);
+    refreshMinted();
   }
 
   /* ---------- featured artworks (home) ---------- */
@@ -458,7 +467,7 @@
         "Then read currentPrice() on the contract and call mint() with no arguments, sending exactly that value.\n" +
         "Show me the exact amount before I sign, and confirm the transaction on-chain once it is done.";
     }
-    fetchMinted().then(paintMinted);
+    refreshMinted();
     const btn = $("#copy-prompt");
     if (btn) {
       btn.addEventListener("click", async () => {
