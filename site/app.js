@@ -6,7 +6,7 @@
 
 (function () {
   "use strict";
-  const CFG = window.XOVRATH_CONFIG;
+  const CFG = window.XOVRATH_CONFIG || {};
   const $ = (sel, el) => (el || document).querySelector(sel);
   const $$ = (sel, el) => Array.from((el || document).querySelectorAll(sel));
 
@@ -374,33 +374,66 @@
       "Show me the exact amount before I sign, and confirm the transaction on-chain once it is done.";
     const btn = $("#copy-prompt");
     if (btn) {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", async () => {
         const text = pre.textContent;
-        const done = () => { btn.textContent = "COPIED"; setTimeout(() => { btn.textContent = "COPY PROMPT"; }, 2000); };
+        const ok = () => {
+          btn.textContent = "COPIED";
+          setTimeout(() => { btn.textContent = "Copy Prompt"; }, 2000);
+        };
+        const fail = () => {
+          // Copy failed on this browser — select the prompt text so the
+          // user can long-press / Ctrl+C it manually instead.
+          btn.textContent = "COPY FAILED — SELECT THE TEXT MANUALLY";
+          try {
+            const sel = window.getSelection();
+            if (sel) {
+              sel.removeAllRanges();
+              const range = document.createRange();
+              range.selectNodeContents(pre);
+              sel.addRange(range);
+            }
+          } catch (e) { /* selection unavailable */ }
+          setTimeout(() => { btn.textContent = "Copy Prompt"; }, 4000);
+        };
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+          try {
+            await navigator.clipboard.writeText(text);
+            ok();
+          } catch (e) {
+            fallbackCopy(text, ok, fail);
+          }
         } else {
-          fallbackCopy(text, done);
+          fallbackCopy(text, ok, fail);
         }
       });
     }
   }
-  function fallbackCopy(text, done) {
+  // execCommand fallback. Returns success honestly: onOk only when the
+  // browser actually copied, onFail otherwise. iOS needs the textarea
+  // focused + readonly + an explicit selection range.
+  function fallbackCopy(text, onOk, onFail) {
     const ta = document.createElement("textarea");
     ta.value = text;
+    ta.readOnly = true;
+    ta.style.position = "fixed";
+    ta.style.top = "0";
+    ta.style.left = "0";
+    ta.style.opacity = "0";
     document.body.appendChild(ta);
+    ta.focus();
     ta.select();
-    try { document.execCommand("copy"); } catch (e) { /* clipboard unavailable */ }
+    try { ta.setSelectionRange(0, text.length); } catch (e) { /* older browsers */ }
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
     document.body.removeChild(ta);
-    done();
+    if (ok) onOk(); else onFail();
   }
 
   /* ---------- boot ---------- */
   document.addEventListener("DOMContentLoaded", () => {
-    initStats();
-    initFeatured();
-    initExplore();
-    initArchive();
-    initMint();
+    // One broken section must not kill the rest (e.g. the copy button).
+    [initStats, initFeatured, initExplore, initArchive, initMint].forEach((fn) => {
+      try { fn(); } catch (e) { /* keep going */ }
+    });
   });
 })();
