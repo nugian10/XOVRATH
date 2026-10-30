@@ -33,8 +33,10 @@
      phones that had cached the pre-deploy config (fixed 30 Okt 2026),
      which told visitors minting had not started and suppressed mints. */
   if (CFG.CONTRACT_ADDRESS) {
+    const addr = CFG.CONTRACT_ADDRESS;
+    const shortAddr = addr.slice(0, 6) + "…" + addr.slice(-4);
     $$(".js-contract-status").forEach((el) => {
-      el.innerHTML = '<span class="dot"></span><span>MINT IS LIVE — ' + esc(CFG.CONTRACT_ADDRESS) + "</span>";
+      el.innerHTML = '<span class="dot"></span><span>MINT IS LIVE — <a href="https://bscscan.com/address/' + esc(addr) + '" target="_blank" rel="noopener">' + esc(shortAddr) + "</a></span>";
     });
     $$(".js-contract-address").forEach((el) => {
       el.textContent = CFG.CONTRACT_ADDRESS;
