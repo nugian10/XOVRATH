@@ -341,7 +341,7 @@
     if (meta && meta.name) rows.push(["Name", meta.name]);
     if (meta && meta.description) rows.push(["Description", meta.description]);
     rows.push(["Status", "Available — mint has not started"]);
-    rows.push(["Total supply on-chain", "0 — contract not deployed"]);
+    rows.push(["Total supply on-chain", "0 — mint has not opened yet"]);
     const body = $("#detail-attrs");
     if (body) {
       body.innerHTML = rows.map((r) =>

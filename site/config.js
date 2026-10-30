@@ -1,9 +1,9 @@
 // XOVRATH — site configuration.
-// The contract is NOT deployed. CONTRACT_ADDRESS stays empty until the
-// owner deploys XovrathNFT.sol on BNB Smart Chain Mainnet (56) and
-// records the real address here. Never fill in a guessed address.
+// Contract DEPLOYED 30 Okt 2026 20:54 WIB (tx 0x21a8987d...6c70fb):
+//   0x12a7f54990fd7ce6c2dabeb3df3de75fb812f3a1
+// Owner = My Wallet, revenue = Agentic Wallet. Never fill in a guessed address.
 const XOVRATH_CONFIG = {
-  CONTRACT_ADDRESS: "",
+  CONTRACT_ADDRESS: "0x12a7f54990fd7ce6c2dabeb3df3de75fb812f3a1",
   CHAIN_ID: 56,
   CHAIN_NAME: "BNB Smart Chain Mainnet",
   TOTAL_SUPPLY: 2222,
