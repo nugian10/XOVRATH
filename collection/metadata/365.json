@@ -1,0 +1,27 @@
+{
+  "name": "XOVRATH \u2014 Artifact #0365",
+  "description": "XOVRATH \u2014 Unknown Artifacts. A collection of 2,222 surreal-form artifacts on BNB Smart Chain: flat, abstract, experimental forms in black and bone white, touched by charcoal, silver and the occasional violet. Unknown forms. Same existence. No two artifacts share the same form.",
+  "image": "https://raw.githubusercontent.com/nugian10/XOVRATH/main/collection/images/365.svg",
+  "attributes": [
+    {
+      "trait_type": "Classification",
+      "value": "FRACTURE"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Bone White"
+    },
+    {
+      "trait_type": "Form",
+      "value": "Monolith Eclipse"
+    },
+    {
+      "trait_type": "Accent",
+      "value": "None"
+    },
+    {
+      "trait_type": "Elements",
+      "value": 5
+    }
+  ]
+}
