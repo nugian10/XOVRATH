@@ -56,7 +56,7 @@ for i in range(1, 2223):
                    "background": attrs["Background"], "form": attrs["Form"],
                    "accent": attrs["Accent"], "elements": attrs["Elements"],
                    "sha256": hashlib.sha256(data).hexdigest()})
-    if not (2 <= attrs["Elements"] <= 5):
+    if not (10 <= attrs["Elements"] <= 70):
         fails.append("token %d elements out of range: %s" % (i, attrs["Elements"]))
 
 check(len(hashes) == 2222, "2222 distinct SVG SHA-256 hashes (got %d)" % len(hashes))

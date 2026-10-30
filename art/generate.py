@@ -24,15 +24,27 @@ USAGE:
   collection/collection.json and collection/all-tokens.json in place.
   Local only: no deploy, no upload, no IPFS pin, no network, no spend.
 
-STYLE:
+    python3 art/generate.py --only 1,56,9,288,13 --out /tmp/preview
+  Preview mode: render only the listed token ids as SVGs into --out,
+  without touching the collection. Use it to show samples before a
+  full regeneration.
+
+STYLE (v2, rebuilt from the reference posters the user sent):
   Flat 2D abstract surreal forms on black (#0a0a0b) or bone white
   (#ece7dc). Charcoal / silver / grey forms, restrained purple/blue/
-  silver accent, subtle feTurbulence grain. No humans, animals, mascots,
+  silver accent. Every poster is a large central form that dominates
+  the canvas: layered translucent smoky masses with hollow voids, a
+  big eclipse disc behind, echo outlines, thin orbit rings and
+  hairlines ending in dots, scattered satellite dots, and one bold
+  accent disc or cloudy wash. Forms are warped by a turbulence
+  displacement filter so edges feel organic and smoky, and the whole
+  poster carries heavy film grain. No humans, animals, mascots,
   PFP characters, realistic 3D, glossy 3D or excessive gradients.
   Poster furniture is real SVG text: "XOVRATH" top-left, "#NNN"
   top-right, "UNKNOWN FORMS." / "SAME EXISTENCE." bottom-left,
   4-point star bottom-right.
 """
+import argparse
 import hashlib
 import json
 import os
@@ -110,6 +122,16 @@ def pick(rng, items):
     return items[int(rng() * len(items))]
 
 
+def _cos(a):
+    import math
+    return math.cos(a)
+
+
+def _sin(a):
+    import math
+    return math.sin(a)
+
+
 def blob_path(rng, cx, cy, r, points=9, wobble=0.35):
     """Closed wobbly blob path around (cx, cy), smoothed with quadratics."""
     pts = []
@@ -123,16 +145,6 @@ def blob_path(rng, cx, cy, r, points=9, wobble=0.35):
         mx, my = (p[0] + q[0]) / 2, (p[1] + q[1]) / 2
         d += "Q %s %s %s %s " % (f(p[0]), f(p[1]), f(mx), f(my))
     return d + "Z"
-
-
-def _cos(a):
-    import math
-    return math.cos(a)
-
-
-def _sin(a):
-    import math
-    return math.sin(a)
 
 
 def shard_points(rng, cx, cy, r, n=5):
@@ -151,193 +163,458 @@ def star_path(cx, cy, r):
                f(cx + r), f(cy), f(cx + r * 0.28), f(cy + r * 0.28)))
 
 
+def scale_points_str(pts_str, cx, cy, factor):
+    """Scale a 'x,y x,y ...' polygon string around (cx, cy)."""
+    out = []
+    for pair in pts_str.split():
+        x, y = pair.split(",")
+        out.append("%s,%s" % (f(cx + (float(x) - cx) * factor),
+                              f(cy + (float(y) - cy) * factor)))
+    return " ".join(out)
+
+
+def mirror_points_str(pts_str, y_axis):
+    """Mirror a 'x,y x,y ...' polygon string across a horizontal axis."""
+    out = []
+    for pair in pts_str.split():
+        x, y = pair.split(",")
+        out.append("%s,%s" % (x, f(2 * y_axis - float(y))))
+    return " ".join(out)
+
+
+def add_dots(rng, els, cx, cy, rx, ry, n, color, rmin=1.5, rmax=5.5,
+             omin=0.35, omax=0.9):
+    """Scatter n small dots inside the ellipse around (cx, cy)."""
+    for _ in range(n):
+        ang = rng() * 6.283185307179586
+        rr = (rng() ** 0.5)
+        x = cx + rr * rx * _cos(ang)
+        y = cy + rr * ry * _sin(ang)
+        els.append('<circle cx="%s" cy="%s" r="%s" fill="%s" opacity="%s"/>'
+                   % (f(x), f(y), f(rmin + rng() * (rmax - rmin)), color,
+                      f(omin + rng() * (omax - omin))))
+    return n
+
+
+def add_ring(rng, els, cx, cy, rx, ry, color, op=0.6, w=1.2):
+    """One thin orbit ellipse, slightly rotated."""
+    els.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="none" '
+               'stroke="%s" stroke-width="%s" opacity="%s" '
+               'transform="rotate(%s %s %s)"/>'
+               % (f(cx), f(cy), f(rx), f(ry), color, f(w), f(op),
+                  f((rng() - 0.5) * 40), f(cx), f(cy)))
+    return 1
+
+
+def add_hairline_v(rng, els, x, y1, y2, color, op=0.55):
+    """Vertical hairline with a dot at each end. Returns 3."""
+    els.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" '
+               'stroke-width="1" opacity="%s"/>'
+               % (f(x), f(y1), f(x), f(y2), color, f(op)))
+    for y in (y1, y2):
+        els.append('<circle cx="%s" cy="%s" r="%s" fill="%s" opacity="0.9"/>'
+                   % (f(x), f(y), f(3 + rng() * 3), color))
+    return 3
+
+
+def add_hairline_diag(rng, els, x1, y1, x2, y2, color, op=0.55):
+    """Diagonal hairline with a dot at each end. Returns 3."""
+    els.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" '
+               'stroke-width="1" opacity="%s"/>'
+               % (f(x1), f(y1), f(x2), f(y2), color, f(op)))
+    for x, y in ((x1, y1), (x2, y2)):
+        els.append('<circle cx="%s" cy="%s" r="%s" fill="%s" opacity="0.9"/>'
+                   % (f(x), f(y), f(3 + rng() * 3), color))
+    return 3
+
+
+def add_ticks(rng, els, x, y, n, color, vertical=True, gap=14):
+    """A barcode-like row of short ticks. Returns n."""
+    for i in range(n):
+        ln = 6 + rng() * 18
+        if vertical:
+            els.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" '
+                       'stroke-width="1.5" opacity="0.75"/>'
+                       % (f(x), f(y + i * gap), f(x + ln), f(y + i * gap),
+                          color))
+        else:
+            els.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" '
+                       'stroke-width="1.5" opacity="0.75"/>'
+                       % (f(x + i * gap), f(y), f(x + i * gap), f(y + ln),
+                          color))
+    return n
+
+
 # ------------------------------------------------------- form families ----
-def form_hollow_shard(rng, cx, cy, ink, bg, accent):
-    """Overlapping shard outlines with hollow voids, thin orbit lines."""
+# v2: each builder echoes one reference poster — a large layered central
+# form (25-45 elements) instead of the v1 handful of flat shapes.
+# Signature: (rng, cx, cy, ink, ink2, bg, accent) -> (elements, count).
+def form_hollow_shard(rng, cx, cy, ink, ink2, bg, accent):
+    """Reference #001: smoky lattice veil with hollow voids, eclipse
+    disc behind, orbit arcs, moon dot, hairline with end dots."""
     els, n = [], 0
-    big = shard_points(rng, cx, cy, 210 + rng() * 90)
-    els.append('<polygon points="%s" fill="none" stroke="%s" stroke-width="3"/>'
-               % (big, ink))
+    # eclipse disc behind the veil + echo outline
+    dx, dy = cx + (rng() - 0.5) * 140, cy - 60 + (rng() - 0.5) * 140
+    disc_r = 165 + rng() * 75
+    els.append('<circle cx="%s" cy="%s" r="%s" fill="%s" fill-opacity="0.92"/>'
+               % (f(dx), f(dy), f(disc_r), ink))
     n += 1
-    for _ in range(1):
-        sx, sy = cx + (rng() - 0.5) * 260, cy + (rng() - 0.5) * 300
-        els.append('<polygon points="%s" fill="%s" fill-opacity="0.85" '
-                   'stroke="%s" stroke-width="2"/>'
-                   % (shard_points(rng, sx, sy, 90 + rng() * 90), ink, bg))
+    els.append('<circle cx="%s" cy="%s" r="%s" fill="none" stroke="%s" '
+               'stroke-width="1.5" opacity="0.5"/>'
+               % (f(dx), f(dy), f(disc_r + 26), ink))
+    n += 1
+    # main veil: layered translucent blobs
+    for i, op in enumerate((0.95, 0.7, 0.5)):
+        bx = cx + (rng() - 0.5) * 150
+        by = cy + (rng() - 0.5) * 180
+        els.append('<path d="%s" fill="%s" fill-opacity="%s"/>'
+                   % (blob_path(rng, bx, by, 185 - i * 30 + rng() * 60,
+                                points=9), ink, f(op)))
         n += 1
     # hollow voids punched in background colour
-    for _ in range(1):
+    for _ in range(3):
         vx, vy = cx + (rng() - 0.5) * 220, cy + (rng() - 0.5) * 260
-        els.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="%s"/>'
-                   % (f(vx), f(vy), f(45 + rng() * 55), f(30 + rng() * 45), bg))
+        els.append('<path d="%s" fill="%s"/>'
+                   % (blob_path(rng, vx, vy, 55 + rng() * 55, points=7), bg))
         n += 1
-    # thin orbit arc
-    els.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="none" '
-               'stroke="%s" stroke-width="1" opacity="0.55" '
-               'transform="rotate(%s %s %s)"/>'
-               % (f(cx), f(cy), f(260 + rng() * 60), f(90 + rng() * 40),
-                  ink, f((rng() - 0.5) * 50), f(cx), f(cy)))
+    # shard lattice outlines over the veil
+    big = shard_points(rng, cx, cy, 215 + rng() * 80)
+    els.append('<polygon points="%s" fill="none" stroke="%s" stroke-width="2.5"/>'
+               % (big, ink2))
     n += 1
+    els.append('<polygon points="%s" fill="none" stroke="%s" stroke-width="1" '
+               'opacity="0.6"/>'
+               % (scale_points_str(big, cx, cy, 0.7), ink))
+    n += 1
+    # orbit arcs + moon dot
+    n += add_ring(rng, els, cx, cy, 265 + rng() * 50, 95 + rng() * 40, ink, 0.5)
+    n += add_ring(rng, els, cx, cy, 300 + rng() * 40, 130 + rng() * 40, ink2, 0.35)
+    els.append('<circle cx="%s" cy="%s" r="%s" fill="%s" fill-opacity="0.85"/>'
+               % (f(cx + 250 + rng() * 60), f(cy - 260 + rng() * 70),
+                  f(16 + rng() * 16), ink2))
+    n += 1
+    # hairline with end dots, left side
+    n += add_hairline_v(rng, els, 110 + rng() * 60, 300 + rng() * 80,
+                        700 + rng() * 120, ink2, 0.5)
+    # scattered satellite dots
+    n += add_dots(rng, els, cx, cy, 330, 380, 9, ink2, 1.5, 5, 0.35, 0.85)
+    # accent: one bold disc + a small echo
     if accent:
         ax, ay = cx + (rng() - 0.5) * 300, cy + (rng() - 0.5) * 320
         els.append('<circle cx="%s" cy="%s" r="%s" fill="%s" fill-opacity="0.9"/>'
-                   % (f(ax), f(ay), f(26 + rng() * 30), accent))
+                   % (f(ax), f(ay), f(22 + rng() * 26), accent))
+        n += 1
+        els.append('<circle cx="%s" cy="%s" r="%s" fill="none" stroke="%s" '
+                   'stroke-width="1" opacity="0.6"/>'
+                   % (f(ax), f(ay), f(34 + rng() * 20), accent))
         n += 1
     return els, n
 
 
-def form_monolith_eclipse(rng, cx, cy, ink, bg, accent):
-    """Big eclipse disc behind a tall slab, thin vertical axis, small orb."""
+def form_monolith_eclipse(rng, cx, cy, ink, ink2, bg, accent):
+    """Reference #042: black eclipse disc, jagged rock spire, mirrored
+    reflection, wide orbit ring, full-height axis with end dots."""
     els, n = [], 0
-    disc_r = 150 + rng() * 90
+    # eclipse disc + echo outline, upper third
+    disc_r = 120 + rng() * 70
+    dx, dy = cx + (rng() - 0.5) * 70, cy - 190 + rng() * 60
     els.append('<circle cx="%s" cy="%s" r="%s" fill="%s"/>'
-               % (f(cx + (rng() - 0.5) * 80), f(cy - 60 + rng() * 60),
-                  f(disc_r), ink))
+               % (f(dx), f(dy), f(disc_r), ink))
     n += 1
-    sw, sh = 70 + rng() * 70, 380 + rng() * 220
-    sx = cx + (rng() - 0.5) * 120 - sw / 2
-    els.append('<rect x="%s" y="%s" width="%s" height="%s" fill="%s"/>'
-               % (f(sx), f(cy - sh / 2 + rng() * 80), f(sw), f(sh), bg))
-    n += 1
-    # slab edge line + thin vertical axis through the whole composition
-    els.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" '
-               'stroke-width="1.5" opacity="0.8"/>'
-               % (f(sx), f(cy - sh / 2), f(sx), f(cy + sh / 2), ink))
-    n += 1
-    els.append('<line x1="%s" y1="150" x2="%s" y2="980" stroke="%s" '
-               'stroke-width="1" opacity="0.5"/>'
-               % (f(cx + (rng() - 0.5) * 40), f(cx + (rng() - 0.5) * 40), ink))
-    n += 1
-    ox, oy = cx + (rng() - 0.5) * 320, cy + (rng() - 0.5) * 380
-    els.append('<circle cx="%s" cy="%s" r="%s" fill="%s"/>'
-               % (f(ox), f(oy), f(10 + rng() * 26),
-                  accent if accent else ink))
-    n += 1
-    return els, n
-
-
-def form_fluid_smoke(rng, cx, cy, ink, bg, accent):
-    """Layered wavy smoke blobs, overlapping translucent washes."""
-    els, n = [], 0
-    tones = [ink, ink, ink]
-    for i in range(3):
-        bx = cx + (rng() - 0.5) * 220
-        by = cy + (rng() - 0.5) * 260
-        op = 0.9 - i * 0.22
-        els.append('<path d="%s" fill="%s" fill-opacity="%s"/>'
-                   % (blob_path(rng, bx, by, 130 + rng() * 110,
-                                points=8 + int(rng() * 4)), tones[i], f(op)))
-        n += 1
-    # a hollow ring drifting through the smoke
-    rx, ry = cx + (rng() - 0.5) * 200, cy + (rng() - 0.5) * 240
     els.append('<circle cx="%s" cy="%s" r="%s" fill="none" stroke="%s" '
-               'stroke-width="2" opacity="0.7"/>'
-               % (f(rx), f(ry), f(40 + rng() * 60), ink))
+               'stroke-width="1" opacity="0.45"/>'
+               % (f(dx), f(dy), f(disc_r + 20), ink))
     n += 1
+    # full-height vertical axis + end dots
+    ax = cx + (rng() - 0.5) * 50
+    n += add_hairline_v(rng, els, ax, 130, 1000, ink, 0.5)
+    # jagged spire: three stacked shard masses, darker toward the base
+    base_y = cy - 40
+    for i, op in enumerate((0.95, 0.8, 0.62)):
+        sp = shard_points(rng, cx + (rng() - 0.5) * 60,
+                          base_y - i * 70, 130 - i * 18, n=6)
+        els.append('<polygon points="%s" fill="%s" fill-opacity="%s"/>'
+                   % (sp, ink, f(op)))
+        n += 1
+    # mirrored reflection below the waterline
+    axis_y = cy + 130
+    for i, op in enumerate((0.45, 0.32, 0.22)):
+        sp = shard_points(rng, cx + (rng() - 0.5) * 60,
+                          base_y - i * 70, 130 - i * 18, n=6)
+        els.append('<polygon points="%s" fill="%s" fill-opacity="%s"/>'
+                   % (mirror_points_str(sp, axis_y), ink, f(op)))
+        n += 1
+    # waterlines: horizontal hairlines of shrinking length
+    for i in range(4):
+        w = 300 - i * 55 + rng() * 40
+        y = axis_y - 12 + i * 26
+        els.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" '
+                   'stroke-width="1" opacity="%s"/>'
+                   % (f(cx - w / 2), f(y), f(cx + w / 2), f(y), ink,
+                      f(0.7 - i * 0.15)))
+        n += 1
+    # wide orbit ring around the middle
+    n += add_ring(rng, els, cx, axis_y - 10, 250 + rng() * 60,
+                  42 + rng() * 22, ink, 0.55)
+    # barcode ticks, right edge
+    n += add_ticks(rng, els, 790 + rng() * 30, 620 + rng() * 80, 5, ink2)
+    # scattered dots
+    n += add_dots(rng, els, cx, cy, 320, 380, 7, ink2, 1.5, 5, 0.35, 0.85)
     if accent:
-        ax, ay = cx + (rng() - 0.5) * 240, cy + (rng() - 0.5) * 280
-        els.append('<path d="%s" fill="%s" fill-opacity="0.75"/>'
-                   % (blob_path(rng, ax, ay, 70 + rng() * 60, points=7),
+        ox, oy = cx + (rng() - 0.5) * 320, cy + (rng() - 0.5) * 380
+        els.append('<circle cx="%s" cy="%s" r="%s" fill="%s" fill-opacity="0.9"/>'
+                   % (f(ox), f(oy), f(12 + rng() * 16), accent))
+        n += 1
+    return els, n
+
+
+def form_fluid_smoke(rng, cx, cy, ink, ink2, bg, accent):
+    """Reference #087: twisting smoke ribbon, bold accent disc behind,
+    diagonal hairline, drifting rings, satellite dots."""
+    els, n = [], 0
+    # bold accent disc behind the smoke (or a large ink outline disc)
+    if accent:
+        ax, ay = cx - 90 + rng() * 120, cy - 130 + rng() * 120
+        els.append('<circle cx="%s" cy="%s" r="%s" fill="%s" fill-opacity="0.92"/>'
+                   % (f(ax), f(ay), f(85 + rng() * 45), accent))
+        n += 1
+    else:
+        els.append('<circle cx="%s" cy="%s" r="%s" fill="none" stroke="%s" '
+                   'stroke-width="1.5" opacity="0.5"/>'
+                   % (f(cx - 60), f(cy - 120), f(110 + rng() * 40), ink))
+        n += 1
+    # smoke ribbon: layered translucent blobs along a diagonal drift
+    for i, op in enumerate((0.95, 0.72, 0.52, 0.35)):
+        bx = cx + (i - 1.5) * (60 + rng() * 40) + (rng() - 0.5) * 60
+        by = cy + (i - 1.5) * (70 + rng() * 40) + (rng() - 0.5) * 60
+        els.append('<path d="%s" fill="%s" fill-opacity="%s"/>'
+                   % (blob_path(rng, bx, by, 120 + rng() * 90, points=9),
+                      ink, f(op)))
+        n += 1
+    # hollow voids inside the smoke
+    for _ in range(2):
+        vx, vy = cx + (rng() - 0.5) * 220, cy + (rng() - 0.5) * 260
+        els.append('<path d="%s" fill="%s"/>'
+                   % (blob_path(rng, vx, vy, 45 + rng() * 45, points=7), bg))
+        n += 1
+    # drifting rings
+    n += add_ring(rng, els, cx + (rng() - 0.5) * 160, cy + (rng() - 0.5) * 200,
+                  55 + rng() * 45, 55 + rng() * 45, ink, 0.65)
+    n += add_ring(rng, els, cx + (rng() - 0.5) * 200, cy + (rng() - 0.5) * 240,
+                  80 + rng() * 50, 40 + rng() * 30, ink2, 0.4)
+    # diagonal hairline across the whole canvas + end dots
+    x1, y1 = 140 + rng() * 80, 180 + rng() * 120
+    x2, y2 = 700 + rng() * 60, 900 + rng() * 80
+    n += add_hairline_diag(rng, els, x1, y1, x2, y2, ink2, 0.5)
+    # satellite dots
+    n += add_dots(rng, els, cx, cy, 330, 390, 9, ink2, 1.5, 5, 0.35, 0.85)
+    # small accent blob inside the smoke
+    if accent:
+        bx, by = cx + (rng() - 0.5) * 200, cy + (rng() - 0.5) * 240
+        els.append('<path d="%s" fill="%s" fill-opacity="0.8"/>'
+                   % (blob_path(rng, bx, by, 55 + rng() * 45, points=7),
                       accent))
         n += 1
     return els, n
 
 
-def form_split_orb(rng, cx, cy, ink, bg, accent):
-    """A large orb cut by a diagonal blade, shards and dots around it."""
+def form_split_orb(rng, cx, cy, ink, ink2, bg, accent):
+    """Reference #126: big textured orb, vertical blade slicing it, bold
+    accent wash inside the slice, spike above, hairlines, top dot."""
     els, n = [], 0
-    orr = 150 + rng() * 80
-    ox, oy = cx + (rng() - 0.5) * 60, cy + (rng() - 0.5) * 60
+    orr = 175 + rng() * 60
+    ox, oy = cx + (rng() - 0.5) * 50, cy + (rng() - 0.5) * 50
+    # orb + cloudy texture blobs on it
     els.append('<circle cx="%s" cy="%s" r="%s" fill="%s"/>'
                % (f(ox), f(oy), f(orr), ink))
     n += 1
-    # blade: long thin triangle slicing the orb
-    ang = (rng() - 0.5) * 1.2
+    for op, col in ((0.3, ink2), (0.22, bg), (0.35, ink2)):
+        tx, ty = ox + (rng() - 0.5) * 160, oy + (rng() - 0.5) * 160
+        els.append('<path d="%s" fill="%s" fill-opacity="%s"/>'
+                   % (blob_path(rng, tx, ty, 70 + rng() * 60, points=8),
+                      col, f(op)))
+        n += 1
+    # echo ring around the orb
+    els.append('<circle cx="%s" cy="%s" r="%s" fill="none" stroke="%s" '
+               'stroke-width="1" opacity="0.5"/>'
+               % (f(ox), f(oy), f(orr + 18), ink))
+    n += 1
+    # blade: long thin triangle slicing the orb, background-filled
+    ang = (rng() - 0.5) * 0.5
     dx, dy = _cos(ang + 1.5708), _sin(ang + 1.5708)
-    L = orr * 2.3
-    bx, by = ox + (rng() - 0.5) * 40, oy + (rng() - 0.5) * 40
-    w = 14 + rng() * 22
+    L = orr * 2.4
+    bx, by = ox + (rng() - 0.5) * 30, oy + (rng() - 0.5) * 30
+    w = 16 + rng() * 20
     px, py = -dy * w, dx * w
     els.append('<polygon points="%s,%s %s,%s %s,%s" fill="%s"/>'
                % (f(bx - dx * L + px), f(by - dy * L + py),
                   f(bx + dx * L + px), f(by + dy * L + py),
                   f(bx + dx * L - px), f(by + dy * L - py), bg))
     n += 1
-    # counter-slice line
+    # blade edge hairlines
     els.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" '
-               'stroke-width="1.5" opacity="0.7"/>'
+               'stroke-width="1" opacity="0.7"/>'
                % (f(bx - dx * L), f(by - dy * L), f(bx + dx * L),
                   f(by + dy * L), ink))
     n += 1
-    for _ in range(2):
-        dx2, dy2 = cx + (rng() - 0.5) * 360, cy + (rng() - 0.5) * 420
-        els.append('<circle cx="%s" cy="%s" r="%s" fill="%s"/>'
-                   % (f(dx2), f(dy2), f(5 + rng() * 16),
-                      accent if accent and rng() < 0.6 else ink))
-        n += 1
+    els.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" '
+               'stroke-width="1" opacity="0.45"/>'
+               % (f(bx - dx * L + px * 2), f(by - dy * L + py * 2),
+                  f(bx + dx * L + px * 2), f(by + dy * L + py * 2), ink2))
+    n += 1
+    # bold accent wash inside the slice (or a grey wash without accent)
+    wash = accent if accent else ink2
+    wop = 0.6 if accent else 0.35
+    els.append('<rect x="%s" y="%s" width="%s" height="%s" fill="%s" '
+               'fill-opacity="%s" transform="rotate(%s %s %s)"/>'
+               % (f(bx - 34), f(by - 190), f(68 + rng() * 30),
+                  f(380 + rng() * 60), wash, f(wop), f(ang * 57.3),
+                  f(bx), f(by)))
+    n += 1
+    # spike above the orb
+    els.append('<polygon points="%s,%s %s,%s %s,%s" fill="%s"/>'
+               % (f(ox - 12), f(oy - orr - 130), f(ox + 12),
+                  f(oy - orr - 130), f(ox), f(oy - orr + 30), ink))
+    n += 1
+    # top dot + side hairlines with end dots
+    els.append('<circle cx="%s" cy="%s" r="%s" fill="%s"/>'
+               % (f(ox + 190 + rng() * 60), f(oy - 240 + rng() * 60),
+                  f(15 + rng() * 12), ink))
+    n += 1
+    n += add_hairline_v(rng, els, 120 + rng() * 50, 260 + rng() * 60,
+                        880 + rng() * 60, ink2, 0.5)
+    n += add_hairline_v(rng, els, 780 + rng() * 40, 300 + rng() * 80,
+                        850 + rng() * 80, ink2, 0.45)
+    # satellite dots
+    n += add_dots(rng, els, cx, cy, 330, 380, 6, ink2, 1.5, 5, 0.35, 0.85)
     return els, n
 
 
-def form_spiked_crown(rng, cx, cy, ink, bg, accent):
-    """Radial spiked crown lattice with a hollow core and side rings."""
+def form_spiked_crown(rng, cx, cy, ink, ink2, bg, accent):
+    """Reference #203: symmetrical spiky crown lattice, hollow core,
+    radial hairlines, side orbit rings, tip dots, axis dots."""
     els, n = [], 0
-    spikes = 7 + int(rng() * 4)
-    r_out = 200 + rng() * 90
-    r_in = r_out * (0.45 + rng() * 0.15)
-    pts = []
+    spikes = 8 + int(rng() * 3)
+    r_out = 195 + rng() * 70
+    r_in = r_out * (0.45 + rng() * 0.12)
+    pts, tips = [], []
     for i in range(spikes * 2):
-        ang = 3.141592653589793 * i / spikes + (rng() - 0.5) * 0.12
+        ang = 3.141592653589793 * i / spikes - 1.5708 + (rng() - 0.5) * 0.1
         rr = r_out if i % 2 == 0 else r_in
-        pts.append("%s,%s" % (f(cx + rr * _cos(ang)), f(cy + rr * _sin(ang))))
-    els.append('<polygon points="%s" fill="%s" fill-opacity="0.92"/>'
+        x, y = cx + rr * _cos(ang), cy + rr * _sin(ang)
+        pts.append("%s,%s" % (f(x), f(y)))
+        if i % 2 == 0:
+            tips.append((x, y))
+    els.append('<polygon points="%s" fill="%s" fill-opacity="0.93"/>'
                % (" ".join(pts), ink))
     n += 1
-    els.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="%s"/>'
-               % (f(cx), f(cy), f(r_in * 0.45), f(r_in * 0.6), bg))
+    # inner echo crown
+    els.append('<polygon points="%s" fill="none" stroke="%s" stroke-width="1.5" '
+               'opacity="0.65"/>'
+               % (scale_points_str(" ".join(pts), cx, cy, 0.68), ink2))
     n += 1
+    # hollow core voids
+    els.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="%s"/>'
+               % (f(cx), f(cy), f(r_in * 0.42), f(r_in * 0.58), bg))
+    n += 1
+    els.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="none" '
+               'stroke="%s" stroke-width="1" opacity="0.6"/>'
+               % (f(cx), f(cy), f(r_in * 0.62), f(r_in * 0.78), bg))
+    n += 1
+    # radial hairlines from the core outward
+    for _ in range(6):
+        ang = rng() * 6.283185307179586
+        x1, y1 = cx + r_in * 0.5 * _cos(ang), cy + r_in * 0.5 * _sin(ang)
+        x2, y2 = cx + (r_out + 55) * _cos(ang), cy + (r_out + 55) * _sin(ang)
+        els.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" '
+                   'stroke-width="1" opacity="0.45"/>'
+                   % (f(x1), f(y1), f(x2), f(y2), ink2))
+        n += 1
+    # side orbit rings
     for side in (-1, 1):
-        rx = cx + side * (r_out + 60 + rng() * 60)
-        ry = cy + (rng() - 0.5) * 200
+        rx = cx + side * (r_out + 95 + rng() * 40)
+        ry = cy + (rng() - 0.5) * 160
         els.append('<circle cx="%s" cy="%s" r="%s" fill="none" stroke="%s" '
                    'stroke-width="1.5" opacity="0.7"/>'
-                   % (f(rx), f(ry), f(34 + rng() * 40), ink))
+                   % (f(rx), f(ry), f(36 + rng() * 30), ink))
         n += 1
+    # dots on the spike tips
+    for tx, ty in tips[:5]:
+        els.append('<circle cx="%s" cy="%s" r="%s" fill="%s" opacity="0.9"/>'
+                   % (f(tx), f(ty), f(3 + rng() * 3), bg))
+        n += 1
+    # vertical axis with end dots
+    n += add_hairline_v(rng, els, cx + (rng() - 0.5) * 30, 150, 990, ink2, 0.45)
+    # satellite dots
+    n += add_dots(rng, els, cx, cy, 330, 380, 6, ink2, 1.5, 5, 0.35, 0.85)
     if accent:
-        els.append('<circle cx="%s" cy="%s" r="%s" fill="%s"/>'
-                   % (f(cx), f(cy - r_out - 40 + rng() * 40),
-                      f(12 + rng() * 14), accent))
+        els.append('<circle cx="%s" cy="%s" r="%s" fill="%s" fill-opacity="0.9"/>'
+                   % (f(cx), f(cy - r_out - 45 + rng() * 40),
+                      f(11 + rng() * 12), accent))
         n += 1
     return els, n
 
 
-def form_fractured_monolith(rng, cx, cy, ink, bg, accent):
-    """Stacked fractured slabs with crack lines and one accent block."""
+def form_fractured_monolith(rng, cx, cy, ink, ink2, bg, accent):
+    """Reference #318: rocky fractured mass, tall black slabs, bold
+    cloudy accent block, ticked hairline, barcode ticks, dots."""
     els, n = [], 0
-    y = cy - 260 + rng() * 80
-    for i in range(3):
-        w = 170 + rng() * 140
-        h = 90 + rng() * 110
-        x = cx - w / 2 + (rng() - 0.5) * 130
-        jag = shard_points(rng, x + w / 2, y + h / 2, w * 0.42, n=4)
-        els.append('<polygon points="%s" fill="%s" fill-opacity="%s"/>'
-                   % (jag, ink, f(0.95 - i * 0.18)))
+    # rocky mass: overlapping translucent blobs, left of centre
+    for i, op in enumerate((0.95, 0.72, 0.5)):
+        bx = cx - 90 + (rng() - 0.5) * 120
+        by = cy + (i - 1) * 130 + (rng() - 0.5) * 60
+        els.append('<path d="%s" fill="%s" fill-opacity="%s"/>'
+                   % (blob_path(rng, bx, by, 130 + rng() * 70, points=9),
+                      ink, f(op)))
         n += 1
-        y += h * 0.8
-    # crack line
-    for _ in range(1):
+    # tall black slabs
+    for i in range(2):
+        w = 95 + rng() * 55
+        h = 430 + rng() * 180
+        x = cx - 40 + i * 110 + (rng() - 0.5) * 40
+        els.append('<rect x="%s" y="%s" width="%s" height="%s" fill="%s"/>'
+                   % (f(x), f(cy - h / 2 + rng() * 60), f(w), f(h),
+                      ink if i == 0 else ink2))
+        n += 1
+        els.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" '
+                   'stroke-width="1" opacity="0.6"/>'
+                   % (f(x), f(cy - h / 2), f(x), f(cy + h / 2), ink2))
+        n += 1
+    # crack lines across the slabs
+    for _ in range(3):
         x1 = cx + (rng() - 0.5) * 260
         els.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" '
                    'stroke-width="1.5" opacity="0.8"/>'
-                   % (f(x1), f(cy - 300), f(x1 + (rng() - 0.5) * 120),
-                      f(cy + 300), ink))
+                   % (f(x1), f(cy - 300), f(x1 + (rng() - 0.5) * 130),
+                      f(cy + 300), ink2))
         n += 1
-    if accent:
-        ax = cx + (rng() - 0.5) * 220
-        els.append('<rect x="%s" y="%s" width="%s" height="%s" fill="%s" '
-                   'fill-opacity="0.85"/>'
-                   % (f(ax), f(cy - 100 + rng() * 120), f(60 + rng() * 60),
-                      f(90 + rng() * 90), accent))
+    # bold cloudy accent block (or a grey block without accent)
+    wash = accent if accent else ink2
+    wop = 0.72 if accent else 0.4
+    ax = cx + 60 + (rng() - 0.5) * 80
+    ay = cy - 60 + (rng() - 0.5) * 120
+    els.append('<rect x="%s" y="%s" width="%s" height="%s" fill="%s" '
+               'fill-opacity="%s"/>'
+               % (f(ax), f(ay), f(150 + rng() * 60), f(240 + rng() * 90),
+                  wash, f(wop)))
+    n += 1
+    for _ in range(2):
+        bx, by = ax + rng() * 150, ay + rng() * 200
+        els.append('<path d="%s" fill="%s" fill-opacity="0.55"/>'
+                   % (blob_path(rng, bx, by, 60 + rng() * 50, points=7),
+                      wash))
         n += 1
+    # ticked hairline, left edge
+    tx = 110 + rng() * 50
+    els.append('<line x1="%s" y1="220" x2="%s" y2="900" stroke="%s" '
+               'stroke-width="1" opacity="0.5"/>'
+               % (f(tx), f(tx), ink2))
+    n += 1
+    n += add_ticks(rng, els, tx - 8, 300 + rng() * 60, 5, ink2)
+    # barcode ticks, right edge
+    n += add_ticks(rng, els, 790 + rng() * 30, 620 + rng() * 80, 5, ink2)
+    # satellite dots
+    n += add_dots(rng, els, cx, cy, 330, 380, 7, ink2, 1.5, 5, 0.35, 0.85)
     return els, n
 
 
@@ -377,35 +654,55 @@ def build_token(token_id, classification):
     cy = 545 + (rng() - 0.5) * 170
     rot = (rng() - 0.5) * 24
 
-    els, count = FORM_BUILDERS[form](rng, cx, cy, ink, bg, accent)
-    # top up with dust dots / hairlines so every token has 2-5 elements
-    target = min(5, max(2, count + int(rng() * 2)))
+    els, count = FORM_BUILDERS[form](rng, cx, cy, ink, ink2, bg, accent)
+    # top up with dust dots / hairlines / rings so every token is dense
+    target = min(56, max(26, count + int(rng() * 4)))
     while count < target:
-        if rng() < 0.5:
-            els.append('<circle cx="%s" cy="%s" r="%s" fill="%s" '
-                       'opacity="0.8"/>'
-                       % (f(120 + rng() * 660), f(180 + rng() * 700),
-                          f(2 + rng() * 6), ink2))
-        else:
+        r = rng()
+        if r < 0.5:
+            count += add_dots(rng, els, cx, cy, 330, 380, 1, ink2, 1.5, 5,
+                              0.35, 0.85)
+        elif r < 0.8:
             x = 120 + rng() * 660
             els.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" '
                        'stroke-width="1" opacity="0.45"/>'
-                       % (f(x), f(180 + rng() * 650), f(x + (rng() - 0.5) * 90),
-                          f(180 + rng() * 650), ink2))
-        count += 1
+                       % (f(x), f(180 + rng() * 650),
+                          f(x + (rng() - 0.5) * 90), f(180 + rng() * 650),
+                          ink2))
+            count += 1
+        else:
+            count += add_ring(rng, els, cx + (rng() - 0.5) * 200,
+                              cy + (rng() - 0.5) * 240, 60 + rng() * 80,
+                              30 + rng() * 40, ink2, 0.35)
 
-    grain = (
+    # turbulence displacement warps the form edges so they feel organic
+    # and smoky, like the reference posters; seed is token-derived.
+    defs = (
+        '<defs>'
+        '<filter id="warp" x="-20%%" y="-20%%" width="140%%" height="140%%">'
+        '<feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" '
+        'numOctaves="3" seed="%d" result="n"/>'
+        '<feDisplacementMap in="SourceGraphic" in2="n" scale="55"/>'
+        '</filter>'
         '<filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" '
         'numOctaves="2" stitchTiles="stitch"/>'
         '<feColorMatrix type="saturate" values="0"/></filter>'
-        '<rect width="900" height="1125" filter="url(#g)" opacity="0.06"/>'
+        '<filter id="g2"><feTurbulence type="fractalNoise" baseFrequency="0.02" '
+        'numOctaves="4" seed="3" stitchTiles="stitch"/>'
+        '<feColorMatrix type="saturate" values="0"/></filter>'
+        '</defs>'
+        % (token_id % 97)
+    )
+    grain = (
+        '<rect width="900" height="1125" filter="url(#g)" opacity="0.07"/>'
+        '<rect width="900" height="1125" filter="url(#g2)" opacity="0.06"/>'
     )
     body = "".join(els)
     svg = (
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1125" '
-        'width="900" height="1125">'
+        'width="900" height="1125">%s'
         '<rect width="900" height="1125" fill="%s"/>'
-        '<g transform="rotate(%s 450 545)">%s</g>%s'
+        '<g transform="rotate(%s 450 545)"><g filter="url(#warp)">%s</g></g>%s'
         '<text x="48" y="64" font-family="Helvetica, Arial, sans-serif" '
         'font-size="20" letter-spacing="5" fill="%s">XOVRATH</text>'
         '<text x="852" y="64" text-anchor="end" font-family="Helvetica, Arial, '
@@ -416,7 +713,7 @@ def build_token(token_id, classification):
         'font-size="15" letter-spacing="3" fill="%s">SAME EXISTENCE.</text>'
         '<path d="%s" fill="%s"/>'
         '</svg>'
-        % (bg, f(rot), body, grain, text, text, token_id, text, text,
+        % (defs, bg, f(rot), body, grain, text, text, token_id, text, text,
            star_path(846, 1020, 16), text)
     )
     record = {
@@ -449,9 +746,34 @@ def metadata_for(rec):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--only", default="",
+                    help="comma-separated token ids: preview mode, SVGs only")
+    ap.add_argument("--out", default="",
+                    help="preview output dir for --only (default: ./preview)")
+    args = ap.parse_args()
+    slots = balanced_classifications()
+    if args.only:
+        ids = [int(s) for s in args.only.split(",") if s.strip()]
+        out_dir = args.out or os.path.join(BASE, "preview")
+        os.makedirs(out_dir, exist_ok=True)
+        for token_id in ids:
+            rec = build_token(token_id, slots[token_id - 1])
+            path = os.path.join(out_dir, "%d.svg" % token_id)
+            with open(path, "w") as fh:
+                fh.write(rec["svg"])
+            try:
+                ET.fromstring(rec["svg"])
+                xml_ok = "XML ok"
+            except ET.ParseError as e:
+                xml_ok = "XML FAIL: %s" % e
+            print("#%d %s / %s / %s / %d elements / %d bytes / %s"
+                  % (token_id, rec["form"], rec["background"], rec["accent"],
+                     rec["elements"], len(rec["svg"]), xml_ok))
+        print("Preview SVGs in %s" % out_dir)
+        return
     os.makedirs(IMG_DIR, exist_ok=True)
     os.makedirs(META_DIR, exist_ok=True)
-    slots = balanced_classifications()
     tokens = []
     for token_id in range(1, TOTAL + 1):
         rec = build_token(token_id, slots[token_id - 1])
