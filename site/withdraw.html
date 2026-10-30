@@ -56,6 +56,7 @@
     <h2>3 &mdash; Withdraw</h2>
     <p class="mut">Mengirim <b>seluruh</b> saldo kontrak ke Agentic Wallet. Hanya owner (My Wallet) yang bisa memanggil ini. Biaya gas kecil, dibayar dari My Wallet.</p>
     <button id="withdrawBtn" type="button" disabled>Withdraw ke Agentic Wallet</button>
+    <p id="withdrawHint" class="mut">Hubungkan My Wallet dulu untuk mengaktifkan tombol ini.</p>
     <p id="withdrawStatus" class="mut"></p>
     <p id="txLinks"></p>
   </div>
@@ -75,7 +76,7 @@ const ABI = [
   "function totalSupply() view returns (uint256)"
 ];
 
-let provider = null, signer = null, account = null, contractBalance = 0n;
+let provider = null, signer = null, account = null, contractBalance = 0n, balanceKnown = false;
 
 const $ = (id) => document.getElementById(id);
 const setStatus = (el, msg, cls) => { el.textContent = msg; el.className = cls || "mut"; };
@@ -85,19 +86,33 @@ async function readBalance() {
     const rpc = new ethers.JsonRpcProvider("https://bsc-dataseed1.binance.org/");
     const c = new ethers.Contract(CONTRACT, ABI, rpc);
     contractBalance = await rpc.getBalance(CONTRACT);
+    balanceKnown = true;
     $("balCell").textContent = ethers.formatEther(contractBalance) + " BNB";
     $("supplyCell").textContent = (await c.totalSupply()).toString() + " token";
-    refreshBtn();
   } catch (e) {
-    $("balCell").textContent = "Gagal dibaca, coba refresh halaman.";
+    // Pembacaan saldo otomatis gagal (mis. RPC lambat) — jangan kunci tombol karenanya.
+    balanceKnown = false;
+    $("balCell").textContent = "Tidak bisa dibaca otomatis — saldo tetap bisa ditarik setelah wallet terhubung.";
   }
+  refreshBtn();
 }
 
 function refreshBtn() {
-  const ok = account && account.toLowerCase() === OWNER.toLowerCase() && contractBalance > 0n;
-  $("withdrawBtn").disabled = !ok;
-  if (account && account.toLowerCase() !== OWNER.toLowerCase()) {
-    setStatus($("walletStatus"), "Terhubung: " + account + " — BUKAN My Wallet. Withdraw membutuhkan My Wallet.", "bad");
+  const isOwner = account && account.toLowerCase() === OWNER.toLowerCase();
+  // Tombol aktif kalau wallet yang terhubung adalah My Wallet.
+  // Saldo tidak jadi syarat: kalau saldo 0, kontrak sendiri yang menolak transaksi.
+  $("withdrawBtn").disabled = !isOwner;
+  const hint = $("withdrawHint");
+  if (!account) {
+    hint.textContent = "Hubungkan My Wallet dulu untuk mengaktifkan tombol ini.";
+  } else if (!isOwner) {
+    hint.textContent = "Wallet yang terhubung bukan My Wallet. Ganti ke My Wallet dulu.";
+  } else if (balanceKnown && contractBalance === 0n) {
+    hint.textContent = "Saldo kontrak 0 — tidak ada yang bisa di-withdraw saat ini.";
+  } else if (balanceKnown) {
+    hint.textContent = "Siap — saldo kontrak " + ethers.formatEther(contractBalance) + " BNB. Klik tombol di atas.";
+  } else {
+    hint.textContent = "My Wallet terhubung. Klik tombol di atas untuk withdraw.";
   }
 }
 
@@ -123,6 +138,7 @@ $("connectBtn").onclick = async () => {
       "Terhubung: " + account + (isMine ? " (My Wallet, benar)." : " — BUKAN My Wallet. Withdraw membutuhkan My Wallet."),
       isMine ? "ok" : "bad");
     await checkNetwork();
+    try { contractBalance = await provider.getBalance(CONTRACT); balanceKnown = true; $("balCell").textContent = ethers.formatEther(contractBalance) + " BNB"; } catch (e) {}
     refreshBtn();
   } catch (e) {
     setStatus($("walletStatus"), "Gagal terhubung: " + (e && e.message ? e.message : e), "bad");
