@@ -28,7 +28,7 @@
   /* ---------- contract status line ---------- */
   $$(".js-contract-status").forEach((el) => {
     if (CFG.CONTRACT_ADDRESS) {
-      el.innerHTML = '<span class="dot"></span><span>CONTRACT DEPLOYED — ' + esc(CFG.CONTRACT_ADDRESS) + "</span>";
+      el.innerHTML = '<span class="dot"></span><span>MINT IS LIVE — ' + esc(CFG.CONTRACT_ADDRESS) + "</span>";
     } else {
       el.innerHTML = '<span class="dot"></span><span>CONTRACT NOT DEPLOYED YET — MINTING OPENS AFTER DEPLOY</span>';
     }
@@ -340,8 +340,8 @@
     }
     if (meta && meta.name) rows.push(["Name", meta.name]);
     if (meta && meta.description) rows.push(["Description", meta.description]);
-    rows.push(["Status", "Available — mint has not started"]);
-    rows.push(["Total supply on-chain", "0 — mint has not opened yet"]);
+    rows.push(["Status", "Available — mint is live"]);
+    rows.push(["Total supply on-chain", "0 — mint is live"]);
     const body = $("#detail-attrs");
     if (body) {
       body.innerHTML = rows.map((r) =>
