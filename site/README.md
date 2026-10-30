@@ -28,13 +28,17 @@ step, no framework, no dependencies. Local only.
 
 ## How the site reads data
 
-At runtime the site fetches, relative to the site folder:
+At runtime the site fetches its data from the public GitHub repo
+(`raw.githubusercontent.com/nugian10/XOVRATH/main/collection/…`) —
+see `config.js`. The old `../collection/` relative paths were removed
+30 Okt 2026: Vercel deploys only this `site/` folder, so those paths
+returned 404 on the live site and the gallery was empty.
 
-- `../collection/collection.json` — collection stats
-- `../collection/all-tokens.json` — array of
+- `collection.json` — collection stats
+- `all-tokens.json` — array of
   `{id, classification, background, form, accent, elements, sha256}`
-- `../collection/images/<id>.svg` — artwork
-- `../collection/metadata/<id>.json` — per-token attributes
+- `images/<id>.svg` — artwork
+- `metadata/<id>.json` — per-token attributes
 
 If those files are absent, the site still renders: the archive lists all
 2,222 slots as "artwork pending", stats show `—` for published artworks,
@@ -43,18 +47,15 @@ counts, no fake minted numbers, no fake addresses are ever shown.
 
 ## Preview locally
 
-Serve from the **project root** (not from `site/`), so the `../collection/`
-paths resolve:
+Serve from anywhere — the data now comes from GitHub, so the server
+root no longer matters:
 
 ```bash
-cd ~/workspace/projects/xovrath
+cd ~/workspace/projects/xovrath/site
 python3 -m http.server 8000
 ```
 
-Then open http://localhost:8000/site/ — home, explore, archive, mint, about.
-
-(Serving from inside `site/` would break the `../collection/` fetches,
-because the collection folder sits outside the server root.)
+Then open http://localhost:8000/ — home, explore, archive, mint, about.
 
 ## Honest status
 
