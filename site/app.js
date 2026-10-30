@@ -168,24 +168,30 @@
     });
   }
 
-  /* ---------- explore: paginated gallery ---------- */
+  /* ---------- explore: filters + paginated gallery ---------- */
   const PAGE_SIZE = 48;
   let exploreTokens = [];
+  let exploreFiltered = [];
   let explorePage = 1;
 
   function renderExplorePage() {
     const host = $("#explore-grid");
     if (!host) return;
+    const totalPages = Math.max(1, Math.ceil(exploreFiltered.length / PAGE_SIZE));
+    if (explorePage > totalPages) explorePage = totalPages;
     const start = (explorePage - 1) * PAGE_SIZE;
-    const slice = exploreTokens.slice(start, start + PAGE_SIZE);
-    host.innerHTML = slice.map(cardHTML).join("");
-    bindArtFallbacks(host);
-    const totalPages = Math.max(1, Math.ceil(exploreTokens.length / PAGE_SIZE));
+    const slice = exploreFiltered.slice(start, start + PAGE_SIZE);
+    if (exploreFiltered.length === 0) {
+      host.innerHTML = '<div class="empty" style="grid-column: 1 / -1;">NO ARTIFACTS MATCH THESE FILTERS.<br>TRY CLEARING A FILTER.</div>';
+    } else {
+      host.innerHTML = slice.map(cardHTML).join("");
+      bindArtFallbacks(host);
+    }
     const count = $("#explore-count");
     if (count) {
       count.textContent = "PAGE " + explorePage + " / " + totalPages + " — SHOWING " +
-        (slice.length ? start + 1 : 0) + "–" + Math.min(start + PAGE_SIZE, exploreTokens.length) +
-        " OF " + exploreTokens.length.toLocaleString("en-US");
+        (slice.length ? start + 1 : 0) + "–" + Math.min(start + PAGE_SIZE, exploreFiltered.length) +
+        " OF " + exploreFiltered.length.toLocaleString("en-US");
     }
     const prev = $("#explore-prev"), next = $("#explore-next");
     if (prev) prev.disabled = explorePage <= 1;
@@ -194,17 +200,46 @@
     if (next) next.style.opacity = explorePage >= totalPages ? 0.35 : 1;
   }
 
+  function applyExploreFilters() {
+    const cls = ($("#explore-filter-class") || {}).value || "";
+    const bg = ($("#explore-filter-bg") || {}).value || "";
+    const ac = ($("#explore-filter-accent") || {}).value || "";
+    const q = (($("#explore-filter-search") || {}).value || "").trim();
+    let list = exploreTokens;
+    if (cls) list = list.filter((t) => t.classification === cls);
+    if (bg) list = list.filter((t) => t.background === bg);
+    if (ac) list = list.filter((t) => t.accent === ac);
+    if (q) {
+      const n = parseInt(q.replace(/^#/, ""), 10);
+      if (!isNaN(n)) list = list.filter((t) => t.id === n);
+      else list = list.filter((t) => (t.classification || "").toLowerCase().includes(q.toLowerCase()));
+    }
+    exploreFiltered = list;
+    explorePage = 1;
+    renderExplorePage();
+  }
+
   function initExplore() {
     const host = $("#explore-grid");
     if (!host) return;
     loadTokens().then((tokens) => {
       exploreTokens = tokens;
+      exploreFiltered = tokens;
+      const bgs = [...new Set(tokens.map((t) => t.background).filter(Boolean))].sort();
+      const acs = [...new Set(tokens.map((t) => t.accent).filter(Boolean))].sort();
+      fillFilter($("#explore-filter-class"), CFG.CLASSIFICATIONS, "ALL CLASSIFICATIONS");
+      fillFilter($("#explore-filter-bg"), bgs, "ALL BACKGROUNDS");
+      fillFilter($("#explore-filter-accent"), acs, "ALL ACCENTS");
+      ["explore-filter-class", "explore-filter-bg", "explore-filter-accent", "explore-filter-search"].forEach((fid) => {
+        const el = document.getElementById(fid);
+        if (el) el.addEventListener("input", applyExploreFilters);
+      });
       explorePage = 1;
       renderExplorePage();
       const prev = $("#explore-prev"), next = $("#explore-next");
       if (prev) prev.addEventListener("click", () => { if (explorePage > 1) { explorePage--; renderExplorePage(); window.scrollTo({ top: 0, behavior: "smooth" }); } });
       if (next) next.addEventListener("click", () => {
-        const totalPages = Math.ceil(exploreTokens.length / PAGE_SIZE);
+        const totalPages = Math.ceil(exploreFiltered.length / PAGE_SIZE);
         if (explorePage < totalPages) { explorePage++; renderExplorePage(); window.scrollTo({ top: 0, behavior: "smooth" }); }
       });
     });

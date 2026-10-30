@@ -30,8 +30,14 @@
   </section>
 
   <section class="section wrap">
-    <div class="grid" id="explore-grid">
-      <div class="empty" style="grid-column: 1 / -1;">LOADING THE GALLERY…<br>IF THIS STAYS EMPTY, THE COLLECTION FILES HAVE NOT BEEN PUBLISHED YET.</div>
+    <div class="filters" role="search">
+      <select id="explore-filter-class" aria-label="Filter by classification"><option value="">ALL CLASSIFICATIONS</option></select>
+      <select id="explore-filter-bg" aria-label="Filter by background"><option value="">ALL BACKGROUNDS</option></select>
+      <select id="explore-filter-accent" aria-label="Filter by accent"><option value="">ALL ACCENTS</option></select>
+      <input type="search" id="explore-filter-search" placeholder="SEARCH #ID OR FORM…" aria-label="Search by token number or form">
+    </div>
+    <div class="grid" id="explore-grid" style="margin-top:16px;">
+      <div class="empty" style="grid-column: 1 / -1;">LOADING THE GALLERY…</div>
     </div>
     <div class="pager">
       <button class="btn" id="explore-prev" type="button">← Previous</button>
