@@ -81,19 +81,23 @@
   <section class="section wrap" style="padding-top:0;">
     <h2>Prompt for Your Agent</h2>
     <p class="muted" style="max-width:640px;">Copy this into your Binance Agentic
-    Wallet agent. It references the deployed contract address once one exists —
-    until then it tells the agent to stop, because there is nothing to mint yet.</p>
+    Wallet agent. Mint is live — the prompt references the deployed contract
+    on BNB Smart Chain Mainnet.</p>
     <div class="prompt-box">
-      <pre id="agent-prompt">Loading prompt…</pre>
+      <pre id="agent-prompt">Mint one XOVRATH on BNB Smart Chain (chain id 56).
+The XOVRATH contract address is 0x12a7f54990fd7ce6c2dabeb3df3de75fb812f3a1 on BNB Smart Chain Mainnet (chain 56).
+First check that my wallet holds a SPACE ID .ai Agent ID — the contract only mints to wallets holding one. There is no per-wallet mint limit.
+Then read currentPrice() on the contract and call mint() with no arguments, sending exactly that value.
+Show me the exact amount before I sign, and confirm the transaction on-chain once it is done.</pre>
       <button class="btn" id="copy-prompt" type="button">Copy Prompt</button>
     </div>
     <p class="small muted">Contract address: <span class="mono js-contract-address">Not deployed yet — no contract address exists.</span></p>
     <div class="note" style="margin-top:28px;">
-      <p><strong>Honest note.</strong> Minting is not live. The contract has not
-      been deployed, and minting can only be activated by the owner — the
-      Agentic Wallet's agent — after deploy. Until then, every artifact in
-      the archive is unminted, and no transaction you are shown for XOVRATH
-      is real.</p>
+      <p><strong>Honest note.</strong> Mint is live. The contract is deployed
+      at 0x12a7f54990fd7ce6c2dabeb3df3de75fb812f3a1 and minting is open —
+      anyone holding a SPACE ID .ai Agent ID can mint through their agent,
+      1 token per mint() call, no per-wallet limit. The owner is My Wallet.
+      No independent audit exists.</p>
     </div>
   </section>
 </main>

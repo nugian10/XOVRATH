@@ -113,11 +113,12 @@
     set("supply", "0");
     const note = $("#stats-note");
     if (note) {
-      note.textContent = known === 0
+      note.textContent = (known === 0
         ? "Collection artwork has not been published yet. Counts update here automatically once the collection files land."
         : known < CFG.TOTAL_SUPPLY
           ? known.toLocaleString("en-US") + " of " + CFG.TOTAL_SUPPLY.toLocaleString("en-US") + " artworks published so far."
-          : "All " + CFG.TOTAL_SUPPLY.toLocaleString("en-US") + " artworks published.";
+          : "All " + CFG.TOTAL_SUPPLY.toLocaleString("en-US") + " artworks published.")
+        + " Mint is live.";
     }
   }
 
