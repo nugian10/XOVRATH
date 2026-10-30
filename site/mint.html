@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mint — XOVRATH</title>
+<meta name="description" content="XOVRATH minting is agent-only. Talk to your Binance Agentic Wallet agent — there is no mint button on this site.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site">
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="index.html">XOVRATH<span>.</span></a>
+    <div class="nav-links">
+      <a href="explore.html">Explore</a>
+      <a href="archive.html">Archive</a>
+      <a href="mint.html">Mint</a>
+      <a href="about.html">About</a>
+    </div>
+  </nav>
+</header>
+
+<main>
+  <section class="hero wrap" style="padding-bottom:0;">
+    <p class="eyebrow">Agent-Only Minting <span class="accent">—</span> No Button Here</p>
+    <h2 style="margin-top:14px;">Mint Through Your Agent</h2>
+    <p class="lede" style="margin-top:16px;">XOVRATH has no mint button, no wallet
+    connection and no on-page sale. Minting happens through your own
+    Binance Agentic Wallet agent — the agent reads the chain, you approve
+    in your wallet, the chain confirms.</p>
+    <p style="margin-top:20px;"><span class="status js-contract-status"><span class="dot"></span><span>CONTRACT NOT DEPLOYED YET — MINTING OPENS AFTER DEPLOY</span></span></p>
+  </section>
+
+  <section class="section wrap">
+    <div class="steps">
+      <div class="step">
+        <div class="n">01</div>
+        <div>
+          <h3>Talk to your agent</h3>
+          <p>Open your Binance Agentic Wallet agent and paste the prompt below.
+          Your agent is the only thing that talks to the contract — this site
+          never touches your wallet.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">02</div>
+        <div>
+          <h3>Your agent checks the chain</h3>
+          <p>The agent reads the deployed contract: total supply, whether
+          minting is active, and which tier the next token falls in.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">03</div>
+        <div>
+          <h3>The agent reveals the amount inside the mint flow</h3>
+          <p>The exact amount to pay is shown only inside the mint flow, by
+          your agent — never published on this site. The agent reveals the
+          price only inside the mint flow, when you initiate a mint.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">04</div>
+        <div>
+          <h3>You approve in your wallet</h3>
+          <p>You review the transaction in your own wallet and approve it
+          yourself. Nothing is signed on your behalf by this site.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">05</div>
+        <div>
+          <h3>On-chain confirmation</h3>
+          <p>Once the transaction confirms on BNB Smart Chain, the artifact
+          is yours. You can verify it in the archive and on a block explorer.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap" style="padding-top:0;">
+    <h2>Prompt for Your Agent</h2>
+    <p class="muted" style="max-width:640px;">Copy this into your Binance Agentic
+    Wallet agent. It references the deployed contract address once one exists —
+    until then it tells the agent to stop, because there is nothing to mint yet.</p>
+    <div class="prompt-box">
+      <pre id="agent-prompt">Loading prompt…</pre>
+      <button class="btn" id="copy-prompt" type="button">Copy Prompt</button>
+    </div>
+    <p class="small muted">Contract address: <span class="mono js-contract-address">Not deployed yet — no contract address exists.</span></p>
+    <div class="note" style="margin-top:28px;">
+      <p><strong>Honest note.</strong> Minting is not live. The contract has not
+      been deployed, and minting can only be activated by the owner — the
+      Agentic Wallet's agent — after deploy. Until then, every artifact in
+      the archive is unminted, and no transaction you are shown for XOVRATH
+      is real.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap foot">
+    <span>XOVRATH — Unknown Artifacts</span>
+    <span>BNB Smart Chain Mainnet · ERC-721 · 2,222 Artifacts</span>
+    <span class="warn">Contract not deployed yet. No independent audit.</span>
+  </div>
+</footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Archive — XOVRATH</title>
+<meta name="description" content="The XOVRATH archive — all 2,222 artifact slots, filterable by classification, background and accent.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site">
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="index.html">XOVRATH<span>.</span></a>
+    <div class="nav-links">
+      <a href="explore.html">Explore</a>
+      <a href="archive.html">Archive</a>
+      <a href="mint.html">Mint</a>
+      <a href="about.html">About</a>
+    </div>
+  </nav>
+</header>
+
+<main>
+  <section class="hero wrap" style="padding-bottom:0;">
+    <p class="eyebrow">The Archive <span class="accent">—</span> All 2,222 Slots</p>
+    <h2 style="margin-top:14px;">Archive</h2>
+    <p class="lede" style="margin-top:16px;">Every slot in the collection, filterable.
+    Nothing here is minted — the contract is not deployed, so total supply
+    on-chain is 0 and every artifact is listed as Available.</p>
+    <p style="margin-top:20px;"><span class="status js-contract-status"><span class="dot"></span><span>CONTRACT NOT DEPLOYED YET — MINTING OPENS AFTER DEPLOY</span></span></p>
+  </section>
+
+  <section class="section wrap" id="archive-list">
+    <div class="filters" role="search">
+      <select id="filter-class" aria-label="Filter by classification"><option value="">ALL CLASSIFICATIONS</option></select>
+      <select id="filter-bg" aria-label="Filter by background"><option value="">ALL BACKGROUNDS</option></select>
+      <select id="filter-accent" aria-label="Filter by accent"><option value="">ALL ACCENTS</option></select>
+      <input type="search" id="filter-search" placeholder="SEARCH #ID OR FORM…" aria-label="Search by token number or form">
+    </div>
+    <p class="count mono small muted" id="archive-count" style="letter-spacing:0.14em;">—</p>
+    <div class="grid" id="archive-grid" style="margin-top:16px;">
+      <div class="empty" style="grid-column: 1 / -1;">LOADING THE ARCHIVE…<br>IF THIS STAYS EMPTY, THE COLLECTION FILES HAVE NOT BEEN PUBLISHED YET.</div>
+    </div>
+  </section>
+
+  <section class="section wrap" id="token-detail" style="display:none;">
+    <p><a href="archive.html" class="small muted" style="letter-spacing:0.14em;">← BACK TO THE ARCHIVE</a></p>
+    <div class="detail" style="margin-top:24px;">
+      <div class="art" id="detail-art"><span class="pending">LOADING ARTWORK…</span></div>
+      <div>
+        <p class="eyebrow">Artifact Detail</p>
+        <h2 id="detail-title" style="margin-top:10px;">XOVRATH</h2>
+        <p style="margin-top:14px;"><span class="badge" id="detail-class">UNKNOWN</span>
+        <span class="badge" style="border-color:var(--line);color:var(--silver);margin-left:8px;">Available</span></p>
+        <table class="attr-table"><tbody id="detail-attrs"></tbody></table>
+        <p class="small muted" id="detail-meta-note" style="margin-top:16px;"></p>
+        <p style="margin-top:24px;"><a class="btn" href="mint.html">How Minting Works</a></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap foot">
+    <span>XOVRATH — Unknown Artifacts</span>
+    <span>BNB Smart Chain Mainnet · ERC-721 · 2,222 Artifacts</span>
+    <span class="warn">Contract not deployed yet. No independent audit.</span>
+  </div>
+</footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

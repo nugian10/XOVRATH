@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Explore — XOVRATH</title>
+<meta name="description" content="Explore the XOVRATH forms — a visual gallery of 2,222 unknown artifacts.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site">
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="index.html">XOVRATH<span>.</span></a>
+    <div class="nav-links">
+      <a href="explore.html">Explore</a>
+      <a href="archive.html">Archive</a>
+      <a href="mint.html">Mint</a>
+      <a href="about.html">About</a>
+    </div>
+  </nav>
+</header>
+
+<main>
+  <section class="hero wrap" style="padding-bottom:0;">
+    <p class="eyebrow">Gallery <span class="accent">—</span> 48 per page</p>
+    <h2 style="margin-top:14px;">Explore the Forms</h2>
+    <p class="lede" style="margin-top:16px;">Every artifact, in order. Open any form
+    to see it larger in the archive.</p>
+    <p style="margin-top:20px;"><span class="status js-contract-status"><span class="dot"></span><span>CONTRACT NOT DEPLOYED YET — MINTING OPENS AFTER DEPLOY</span></span></p>
+  </section>
+
+  <section class="section wrap">
+    <div class="grid" id="explore-grid">
+      <div class="empty" style="grid-column: 1 / -1;">LOADING THE GALLERY…<br>IF THIS STAYS EMPTY, THE COLLECTION FILES HAVE NOT BEEN PUBLISHED YET.</div>
+    </div>
+    <div class="pager">
+      <button class="btn" id="explore-prev" type="button">← Previous</button>
+      <span class="count" id="explore-count">—</span>
+      <button class="btn" id="explore-next" type="button">Next →</button>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap foot">
+    <span>XOVRATH — Unknown Artifacts</span>
+    <span>BNB Smart Chain Mainnet · ERC-721 · 2,222 Artifacts</span>
+    <span class="warn">Contract not deployed yet. No independent audit.</span>
+  </div>
+</footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

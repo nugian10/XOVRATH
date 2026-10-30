@@ -1,0 +1,35 @@
+{
+  "total": 2222,
+  "classifications": {
+    "VOID": 371,
+    "FRACTURE": 370,
+    "ANOMALY": 370,
+    "ORIGIN": 370,
+    "UNKNOWN": 370,
+    "DISTORTION": 371
+  },
+  "backgrounds": {
+    "Bone White": 1017,
+    "Black": 1205
+  },
+  "accents": {
+    "Blue": 258,
+    "None": 1238,
+    "Purple": 536,
+    "Silver": 190
+  },
+  "forms": {
+    "Hollow Shard Lattice": 371,
+    "Fractured Monolith": 340,
+    "Monolith Eclipse": 355,
+    "Split Orb Blade": 408,
+    "Spiked Crown Lattice": 362,
+    "Fluid Smoke Form": 386
+  },
+  "generator": "art/generate.py",
+  "seed": "token id only \u2014 mulberry32(seed = ((token_id * 2654435761) ^ 0x584F5652) & 0xFFFFFFFF); classification slots are a fixed balanced shuffle seeded by the same salt 0x584F5652",
+  "contract": {
+    "status": "not deployed",
+    "address": ""
+  }
+}
