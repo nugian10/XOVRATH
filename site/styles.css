@@ -415,3 +415,91 @@ footer.site {
   letter-spacing: 0.12em;
   line-height: 2;
 }
+
+/* ---- visual polish (21:24 WIB 30 Okt 2026) ---- */
+
+/* Hero glow — faint violet light behind the headline. */
+.hero {
+  background:
+    radial-gradient(720px 320px at 85% 0%, rgba(122, 92, 255, 0.14), transparent 70%),
+    radial-gradient(560px 280px at 0% 100%, rgba(122, 92, 255, 0.07), transparent 70%);
+  padding-bottom: 56px;
+}
+
+/* Hero artwork strip — the six reference forms. */
+.hero-art {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  margin-top: 44px;
+}
+.hero-art img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  background: #161616;
+  transition: transform 0.45s ease, border-color 0.45s ease;
+}
+.hero-art img:hover { transform: translateY(-4px) scale(1.02); border-color: var(--purple); }
+@media (max-width: 860px) { .hero-art { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 520px) { .hero-art { grid-template-columns: repeat(2, 1fr); } }
+
+/* Live dot pulses. */
+.status .dot { animation: pulse-dot 2.2s ease-in-out infinite; }
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(122, 92, 255, 0.55); }
+  50% { box-shadow: 0 0 0 7px rgba(122, 92, 255, 0); }
+}
+
+/* Buttons lift on hover. */
+.btn { transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease; }
+.btn:hover { transform: translateY(-2px); }
+.btn.primary:hover { box-shadow: 0 10px 28px rgba(122, 92, 255, 0.35); }
+
+/* Cards lift and artwork zooms on hover. */
+.card { transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease; }
+.card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(0, 0, 0, 0.55); }
+.card .art img { transition: transform 0.5s ease; }
+.card:hover .art img { transform: scale(1.06); }
+.detail .art img { transition: transform 0.5s ease; }
+.detail .art:hover img { transform: scale(1.03); }
+
+/* Stats, nav, steps and classification tiles respond on hover. */
+.stat { transition: background-color 0.3s ease; }
+.stat:hover { background: #141414; }
+.nav-links a { transition: color 0.25s ease, border-color 0.25s ease; }
+.step { transition: background-color 0.3s ease; }
+.step:hover { background: rgba(122, 92, 255, 0.05); }
+.class-item { transition: background-color 0.3s ease; }
+.class-item:hover { background: #161616; }
+
+/* Section headings get a violet marker. */
+.section-head h2::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background: var(--purple);
+  margin-right: 12px;
+}
+
+/* Footer ghost wordmark. */
+footer.site::after {
+  content: "XOVRATH";
+  display: block;
+  text-align: center;
+  font-size: clamp(56px, 13vw, 150px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  margin-top: 40px;
+  color: transparent;
+  -webkit-text-stroke: 1px #232323;
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
