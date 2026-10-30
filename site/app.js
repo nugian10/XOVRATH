@@ -97,6 +97,48 @@
     return counts;
   }
 
+  /* ---------- live minted count (on-chain) ----------
+     Reads totalSupply() straight from the deployed contract with a
+     plain JSON-RPC eth_call — no wallet, no library. Tries the BSC
+     dataseed first, then publicnode. 6s timeout each. If both fail
+     (slow or rate-limited public RPC), the static counts stay as they
+     are — the page never shows a wrong number. */
+  const TOTAL_SUPPLY_SELECTOR = "0x18160ddd"; // totalSupply()
+  const RPC_URLS = ["https://bsc-dataseed.binance.org/", "https://bsc.publicnode.com"];
+  async function fetchMinted() {
+    if (!CFG.CONTRACT_ADDRESS) return null;
+    for (const url of RPC_URLS) {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 6000);
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call",
+            params: [{ to: CFG.CONTRACT_ADDRESS, data: TOTAL_SUPPLY_SELECTOR }, "latest"] }),
+          signal: ctrl.signal,
+        });
+        clearTimeout(timer);
+        if (!res.ok) continue;
+        const json = await res.json();
+        const raw = json && json.result;
+        if (!raw || raw === "0x") continue;
+        const n = parseInt(raw, 16);
+        if (isNaN(n)) continue;
+        return n;
+      } catch (e) { /* try the next RPC */ }
+    }
+    return null;
+  }
+  function paintMinted(n) {
+    if (n == null) return;
+    const pretty = Number(n).toLocaleString("en-US");
+    $$('[data-stat="supply"]').forEach((el) => { el.textContent = pretty; });
+    $$("[data-minted]").forEach((el) => { el.textContent = pretty; });
+    const note = $("#stats-note");
+    if (note) note.textContent = "Mint is live. " + pretty + " of " + CFG.TOTAL_SUPPLY.toLocaleString("en-US") + " minted on-chain so far.";
+  }
+
   /* ---------- home stats ---------- */
   async function initStats() {
     const host = $("#stats");
@@ -125,6 +167,7 @@
           : "All " + CFG.TOTAL_SUPPLY.toLocaleString("en-US") + " artworks published.")
         + " Mint is live.";
     }
+    fetchMinted().then(paintMinted);
   }
 
   /* ---------- featured artworks (home) ---------- */
@@ -415,6 +458,7 @@
         "Then read currentPrice() on the contract and call mint() with no arguments, sending exactly that value.\n" +
         "Show me the exact amount before I sign, and confirm the transaction on-chain once it is done.";
     }
+    fetchMinted().then(paintMinted);
     const btn = $("#copy-prompt");
     if (btn) {
       btn.addEventListener("click", async () => {
