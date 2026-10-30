@@ -61,15 +61,18 @@ pragma solidity 0.8.24;
 //   EOA wallet holding an Agent ID can mint, as on Nomio.
 // - Owner / revenue are CONSTRUCTOR PARAMETERS — no wallet
 //   address is hard-coded except the public Agent ID registry
-//   default. FOR XOVRATH (forced by Nugraha 30 Okt 2026):
-//     owner         = Binance Agentic Wallet
+//   default. FOR XOVRATH (decided by Nugraha 30 Okt 2026 20:31 WIB,
+//   reversing the 19:10 all-Agentic instruction — same pattern as
+//   Mythora / MythRealm / MINTFORM):
+//     owner         = My Wallet
+//                     0x0262e8e5E4584D8AB840fD950a6E2E0A414d4097
 //     revenueWallet = Binance Agentic Wallet
-//     (both: 0x89c37649Ba3BAA9E1ce028612b7DE4e9c3a947B7)
+//                     0x89c37649Ba3BAA9E1ce028612b7DE4e9c3a947B7
 //   Consequence: owner calls (setMintActive / setBaseURI /
-//   withdraw / setAgentIdRegistry / setTierPrices) can ONLY be
-//   made by that wallet's own paired Binance agent — a browser
-//   wallet cannot sign for them. The deploy transaction itself
-//   is still signed by a separate funded deployer wallet.
+//   withdraw / setAgentIdRegistry / setTierPrices) are made by
+//   My Wallet from a browser wallet. The Agentic Wallet only
+//   receives mint proceeds via withdraw(). The deploy transaction
+//   itself is signed by My Wallet (the deployer, pays gas).
 // - Funds: mint payments stay in this contract until the owner
 //   calls withdraw(), which sends the whole balance to the
 //   revenue wallet.

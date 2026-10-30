@@ -35,13 +35,13 @@ Diverifikasi on-chain 30 Okt 2026 via bsc-dataseed: kontrak .ai NFT ada (8.756 b
 
 ## Alamat — parameter constructor, TIDAK di-hardcode (kecuali registry publik)
 
-- Owner: Binance Agentic Wallet `0x89c37649Ba3BAA9E1ce028612b7DE4e9c3a947B7`
+- Owner: My Wallet `0x0262e8e5E4584D8AB840fD950a6E2E0A414d4097` (diputuskan 30 Okt 2026 20:31 WIB — membalikkan instruksi all-Agentic 19:10 WIB; pola sama seperti Mythora / MythRealm / MINTFORM)
 - Revenue: Binance Agentic Wallet `0x89c37649Ba3BAA9E1ce028612b7DE4e9c3a947B7`
 - Agent ID registry: SPACE ID .ai NFT `0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F` (bisa diubah owner kalau SPACE ID migrasi; cek bisa dimatikan owner via `setAgentIdCheckRequired(false)` — kalau dimatikan, mint jadi permissionless on-chain).
 
 ## Peringatan jujur (baca sebelum deploy)
 
-1. Owner = Agentic Wallet: semua fungsi owner HANYA bisa dipanggil agen Binance yang ter-pairing. Kalau agen itu putus, fungsi owner TERKUNCI sampai tersambung lagi.
+1. Owner = My Wallet: semua fungsi owner dipanggil dari My Wallet lewat browser wallet — agen Binance TIDAK dibutuhkan untuk fungsi owner. Agentic Wallet hanya menerima hasil mint (withdraw).
 2. Mint HANYA untuk wallet yang memegang Agent ID .ai. Agentic Wallet Nugraha sudah memegang 1 — tapi pembeli lain WAJIB klaim Agent ID dulu di aplikasi Binance, kalau tidak mint mereka revert `NoAgentId`.
 3. Kontrak ini BELUM diaudit independen. Setelah deploy, verifikasi source di BscScan, tapi tetap tulis "belum diaudit" di situs.
 4. Deploy mainnet (Chain ID 56) pakai BNB sungguhan dan tidak bisa dibatalkan.

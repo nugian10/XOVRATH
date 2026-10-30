@@ -7,23 +7,23 @@
 //
 // The deployer pays gas only. Owner / revenue / agentIdRegistry are
 // constructor arguments — the deployer address does NOT have to be
-// the owner. FOR XOVRATH (forced by Nugraha 30 Okt 2026, NOT the
-// Mythora pattern): owner AND revenue are the Binance Agentic Wallet
-//   OWNER_ADDRESS    = Binance Agentic Wallet
+// the owner. FOR XOVRATH (decided by Nugraha 30 Okt 2026 20:31 WIB,
+// reversing the 19:10 all-Agentic instruction — same pattern as
+// Mythora / MythRealm / MINTFORM):
+//   OWNER_ADDRESS    = My Wallet (also the deployer)
 //   REVENUE_WALLET   = Binance Agentic Wallet
 //   AGENT_ID_REGISTRY = SPACE ID .ai NFT (public registry, verified
-//                      on-chain 30 Okt 2026 — the deployer's Agentic
-//                      Wallet holds 1 Agent ID there)
+//                      on-chain 30 Okt 2026 — the Agentic Wallet
+//                      holds 1 Agent ID there)
 //                      0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F
 // Consequence: after deploy, owner calls (setMintActive /
-// setBaseURI / withdraw / setAgentIdRegistry) can ONLY be made by
-// the Agentic Wallet's own paired Binance agent. My Wallet cannot
-// call them. The deploy transaction itself is still signed by a
-// separate funded deployer wallet — the Agentic Wallet has no
-// exportable key, so it cannot be the Hardhat deployer.
+// setBaseURI / withdraw / setAgentIdRegistry) are made by My Wallet
+// from a browser wallet. The Agentic Wallet only receives mint
+// proceeds via withdraw(). The deploy transaction is signed by
+// My Wallet (the deployer, pays gas).
 // Minting (v2, Nomio model): mint() takes no arguments, mints 1,
-// requires the minter to hold a SPACE ID .ai Agent ID, one work
-// per wallet, value must equal currentPrice() exactly.
+// requires the minter to hold a SPACE ID .ai Agent ID (no per-wallet
+// limit), value must equal currentPrice() exactly.
 // See contracts/XovrathNFT.sol header.
 const fs = require("node:fs");
 const path = require("node:path");
