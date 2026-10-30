@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Withdraw Dana XOVRATH &mdash; Mainnet</title>
+<link rel="stylesheet" href="styles.css?v=2">
+<style>
+  .wrap{max-width:760px;margin:0 auto;padding:32px 20px 64px}
+  .box{border:1px solid #2a2a28;background:#111110;padding:18px 20px;margin:18px 0}
+  .warn{border:1px solid #8a6d1a;background:#191507}
+  .warn h2{color:#e8c34a}
+  .ok{color:#7fd98a}.bad{color:#e86a6a}.mut{color:#8f8f88}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace;word-break:break-all;font-size:13px}
+  label{display:block;margin:10px 0 4px;color:#b5b5ae;font-size:13px;letter-spacing:.08em}
+  input[type=text]{width:100%;background:#0a0a0b;border:1px solid #2a2a28;color:#ece7dc;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+  button{cursor:pointer;background:#ece7dc;color:#0a0a0b;border:0;padding:12px 22px;font-size:15px;letter-spacing:.05em;margin-top:8px}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.ghost{background:transparent;color:#ece7dc;border:1px solid #555550}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td{padding:7px 4px;border-bottom:1px solid #22221f;vertical-align:top}
+  td:first-child{color:#8f8f88;width:46%}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="mut"><a href="index.html">&larr; Kembali ke XOVRATH</a></p>
+  <h1>Withdraw Dana XOVRATH</h1>
+  <p class="mut">BNB Smart Chain Mainnet &middot; menarik seluruh saldo BNB yang masih ada di dalam kontrak ke revenue wallet (Agentic Wallet).</p>
+
+  <div class="box warn">
+    <h2>Penting</h2>
+    <p>Halaman ini <b>TIDAK PERNAH</b> meminta seed phrase atau private key. Jangan pernah mengetik seed phrase atau private key di halaman web mana pun, dan jangan pernah mengirimkannya ke siapa pun, termasuk Muse. Kalau ada halaman yang memintanya, itu penipuan. Tutup halaman itu.</p>
+  </div>
+
+  <div class="box">
+    <h2>1 &mdash; Saldo kontrak</h2>
+    <table>
+      <tr><td>Kontrak</td><td class="mono">0x12a7f54990fD7cE6C2DABeB3DF3DE75fb812F3a1</td></tr>
+      <tr><td>Saldo di kontrak</td><td id="balCell">Membaca...</td></tr>
+      <tr><td>Total mint</td><td id="supplyCell">Membaca...</td></tr>
+      <tr><td>Owner</td><td class="mono">0x0262e8e5E4584D8AB840fD950a6E2E0A414d4097 (My Wallet)</td></tr>
+      <tr><td>Penerima dana</td><td class="mono">0x89c37649Ba3BAA9E1ce028612b7DE4e9c3a947B7 (Agentic Wallet)</td></tr>
+    </table>
+  </div>
+
+  <div class="box">
+    <h2>2 &mdash; Hubungkan wallet</h2>
+    <p id="walletStatus">Wallet belum terhubung.</p>
+    <button id="connectBtn" class="ghost" type="button">Hubungkan Wallet</button>
+    <p id="netStatus" class="mut"></p>
+  </div>
+
+  <div class="box">
+    <h2>3 &mdash; Withdraw</h2>
+    <p class="mut">Mengirim <b>seluruh</b> saldo kontrak ke Agentic Wallet. Hanya owner (My Wallet) yang bisa memanggil ini. Biaya gas kecil, dibayar dari My Wallet.</p>
+    <button id="withdrawBtn" type="button" disabled>Withdraw ke Agentic Wallet</button>
+    <p id="withdrawStatus" class="mut"></p>
+    <p id="txLinks"></p>
+  </div>
+</div>
+
+<script src="ethers.umd.min.js"></script>
+<script>
+const CONTRACT = "0x12a7f54990fD7cE6C2DABeB3DF3DE75fb812F3a1";
+const OWNER = "0x0262e8e5E4584D8AB840fD950a6E2E0A414d4097";
+const REVENUE = "0x89c37649Ba3BAA9E1ce028612b7DE4e9c3a947B7";
+const CHAIN_ID = 56;
+const EXPLORER = "https://bscscan.com";
+const ABI = [
+  "function withdraw()",
+  "function owner() view returns (address)",
+  "function revenueWallet() view returns (address)",
+  "function totalSupply() view returns (uint256)"
+];
+
+let provider = null, signer = null, account = null, contractBalance = 0n;
+
+const $ = (id) => document.getElementById(id);
+const setStatus = (el, msg, cls) => { el.textContent = msg; el.className = cls || "mut"; };
+
+async function readBalance() {
+  try {
+    const rpc = new ethers.JsonRpcProvider("https://bsc-dataseed1.binance.org/");
+    const c = new ethers.Contract(CONTRACT, ABI, rpc);
+    contractBalance = await rpc.getBalance(CONTRACT);
+    $("balCell").textContent = ethers.formatEther(contractBalance) + " BNB";
+    $("supplyCell").textContent = (await c.totalSupply()).toString() + " token";
+    refreshBtn();
+  } catch (e) {
+    $("balCell").textContent = "Gagal dibaca, coba refresh halaman.";
+  }
+}
+
+function refreshBtn() {
+  const ok = account && account.toLowerCase() === OWNER.toLowerCase() && contractBalance > 0n;
+  $("withdrawBtn").disabled = !ok;
+  if (account && account.toLowerCase() !== OWNER.toLowerCase()) {
+    setStatus($("walletStatus"), "Terhubung: " + account + " — BUKAN My Wallet. Withdraw membutuhkan My Wallet.", "bad");
+  }
+}
+
+async function checkNetwork() {
+  const net = await provider.getNetwork();
+  const ok = Number(net.chainId) === CHAIN_ID;
+  setStatus($("netStatus"),
+    ok ? "Jaringan: BNB Smart Chain Mainnet (56). Benar."
+       : "Jaringan SALAH: chain " + net.chainId + ". Pindah ke BNB Smart Chain Mainnet (56) dulu.",
+    ok ? "ok" : "bad");
+  return ok;
+}
+
+$("connectBtn").onclick = async () => {
+  try {
+    if (!window.ethereum) { setStatus($("walletStatus"), "Tidak ada wallet di browser ini. Buka halaman ini dari browser wallet kamu (browser di dalam aplikasi wallet yang menyimpan My Wallet).", "bad"); return; }
+    provider = new ethers.BrowserProvider(window.ethereum);
+    const accounts = await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    account = accounts[0];
+    const isMine = account.toLowerCase() === OWNER.toLowerCase();
+    setStatus($("walletStatus"),
+      "Terhubung: " + account + (isMine ? " (My Wallet, benar)." : " — BUKAN My Wallet. Withdraw membutuhkan My Wallet."),
+      isMine ? "ok" : "bad");
+    await checkNetwork();
+    refreshBtn();
+  } catch (e) {
+    setStatus($("walletStatus"), "Gagal terhubung: " + (e && e.message ? e.message : e), "bad");
+  }
+};
+
+if (window.ethereum) {
+  window.ethereum.on("accountsChanged", () => location.reload());
+  window.ethereum.on("chainChanged", () => location.reload());
+}
+
+$("withdrawBtn").onclick = async () => {
+  try {
+    $("withdrawBtn").disabled = true;
+    setStatus($("withdrawStatus"), "Mengirim transaksi withdraw... konfirmasi di wallet kamu.");
+    if (!(await checkNetwork())) { $("withdrawBtn").disabled = false; return; }
+    const c = new ethers.Contract(CONTRACT, ABI, signer);
+    const tx = await c.withdraw();
+    setStatus($("withdrawStatus"), "Transaksi terkirim: " + tx.hash + ". Menunggu konfirmasi di chain...");
+    await tx.wait();
+    setStatus($("withdrawStatus"), "Withdraw berhasil. Dana sudah masuk ke Agentic Wallet.", "ok");
+    $("txLinks").innerHTML = '<a href="' + EXPLORER + '/tx/' + tx.hash + '" target="_blank" rel="noopener">Lihat transaksi di BscScan</a>';
+    await readBalance();
+  } catch (e) {
+    setStatus($("withdrawStatus"), "Withdraw gagal / dibatalkan: " + (e && e.message ? e.message : e), "bad");
+    $("withdrawBtn").disabled = false;
+  }
+};
+
+readBalance();
+</script>
+</body>
+</html>
