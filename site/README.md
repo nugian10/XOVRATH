@@ -59,8 +59,7 @@ Then open http://localhost:8000/ — home, explore, archive, mint, about.
 
 ## Honest status
 
-- Contract **not deployed yet**. `CONTRACT_ADDRESS` in `config.js` is empty
-  on purpose. Never fill in a guessed address.
+- Contract **deployed** 30 Okt 2026: `0x12a7f54990fd7ce6c2dabeb3df3de75fb812f3a1` (BSC Mainnet), source-verified on BscScan, mint live since 21:15 WIB. Owner = My Wallet, revenue = Agentic Wallet. Never fill in a guessed address.
 - **No independent audit.** Stated in the footer of every page.
 - Minted on-chain is **0**; every artifact is listed as Available.
 - No amounts are printed anywhere on the site. The mint page explains that

@@ -25,17 +25,22 @@
     }
   });
 
-  /* ---------- contract status line ---------- */
-  $$(".js-contract-status").forEach((el) => {
-    if (CFG.CONTRACT_ADDRESS) {
+  /* ---------- contract status line ----------
+     The static HTML already says the truth (MINT IS LIVE with the
+     deployed address). JS only ever upgrades it from config.js — it
+     must never downgrade it: a stale or failed config.js used to
+     overwrite the correct text with "CONTRACT NOT DEPLOYED YET" on
+     phones that had cached the pre-deploy config (fixed 30 Okt 2026),
+     which told visitors minting had not started and suppressed mints. */
+  if (CFG.CONTRACT_ADDRESS) {
+    $$(".js-contract-status").forEach((el) => {
       el.innerHTML = '<span class="dot"></span><span>MINT IS LIVE — ' + esc(CFG.CONTRACT_ADDRESS) + "</span>";
-    } else {
-      el.innerHTML = '<span class="dot"></span><span>CONTRACT NOT DEPLOYED YET — MINTING OPENS AFTER DEPLOY</span>';
-    }
-  });
-  $$(".js-contract-address").forEach((el) => {
-    el.textContent = CFG.CONTRACT_ADDRESS || "Not deployed yet — no contract address exists.";
-  });
+    });
+    $$(".js-contract-address").forEach((el) => {
+      el.textContent = CFG.CONTRACT_ADDRESS;
+    });
+  }
+  // If CFG.CONTRACT_ADDRESS is missing, leave the static HTML alone.
 
   /* ---------- data loading ---------- */
   let collectionCache = null;
@@ -398,15 +403,18 @@
     const pre = $("#agent-prompt");
     if (!pre) return;
     const addr = CFG.CONTRACT_ADDRESS;
-    const addrLine = addr
-      ? "The XOVRATH contract address is " + addr + " on BNB Smart Chain Mainnet (chain 56)."
-      : "The XOVRATH contract is not deployed yet. Do not mint anything until the owner gives you the deployed contract address — if there is no deployed contract address, stop and say so.";
-    pre.textContent =
-      "Mint one XOVRATH on BNB Smart Chain (chain id 56).\n" +
-      addrLine + "\n" +
-      "First check that my wallet holds a SPACE ID .ai Agent ID — the contract only mints to wallets holding one. There is no per-wallet mint limit.\n" +
-      "Then read currentPrice() on the contract and call mint() with no arguments, sending exactly that value.\n" +
-      "Show me the exact amount before I sign, and confirm the transaction on-chain once it is done.";
+    // Only rebuild the prompt when the address is known. A stale or
+    // failed config.js used to overwrite the correct static prompt with
+    // "not deployed yet" — which told the agent to stop minting
+    // (fixed 30 Okt 2026). With no address, leave the static text alone.
+    if (addr) {
+      pre.textContent =
+        "Mint one XOVRATH on BNB Smart Chain (chain id 56).\n" +
+        "The XOVRATH contract address is " + addr + " on BNB Smart Chain Mainnet (chain 56).\n" +
+        "First check that my wallet holds a SPACE ID .ai Agent ID — the contract only mints to wallets holding one. There is no per-wallet mint limit.\n" +
+        "Then read currentPrice() on the contract and call mint() with no arguments, sending exactly that value.\n" +
+        "Show me the exact amount before I sign, and confirm the transaction on-chain once it is done.";
+    }
     const btn = $("#copy-prompt");
     if (btn) {
       btn.addEventListener("click", async () => {
