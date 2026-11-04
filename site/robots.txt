@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /activate-mint.html
+Disallow: /deploy.html
+Disallow: /set-baseuri.html
+Disallow: /withdraw.html
+
+Sitemap: https://xovrath.vercel.app/sitemap.xml

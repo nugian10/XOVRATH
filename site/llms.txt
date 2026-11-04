@@ -1,0 +1,28 @@
+# XOVRATH
+
+> XOVRATH is a collection of 2,222 surreal flat 2D abstract artifact NFTs (ERC-721) on BNB Smart Chain Mainnet (chain ID 56). Minting is agent-only: there is no mint button and no wallet connection on the site. You mint through your own Binance Agentic Wallet agent.
+
+## Key facts
+
+- Collection: 2,222 ERC-721 Unknown Artifacts; VOID 371, DISTORTION 371, ORIGIN 370, ANOMALY 370, FRACTURE 370, UNKNOWN 370
+- Chain: BNB Smart Chain Mainnet (56)
+- Contract: 0x12a7f54990fd7ce6c2dabeb3df3de75fb812f3a1 — mint is live (mintActive true)
+- Owner: My Wallet 0x0262e8e5E4584D8AB840fD950a6E2E0A414d4097; mint proceeds go to the Binance Agentic Wallet 0x89c37649Ba3BAA9E1ce028612b7DE4e9c3a947B7
+- Minting: agent-only; the minter must hold a SPACE ID .ai Agent ID (registry 0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F). One token per mint() call, no arguments
+- Price: read currentPrice() on the contract
+- Artwork and metadata: public GitHub repo nugian10/XOVRATH; baseURI https://raw.githubusercontent.com/nugian10/XOVRATH/main/collection/metadata/
+
+## Pages
+
+- [Home](https://xovrath.vercel.app/)
+- [Mint — how to mint through your agent](https://xovrath.vercel.app/mint)
+- [Explore — the forms](https://xovrath.vercel.app/explore.html)
+- [Archive — all 2,222 artifacts](https://xovrath.vercel.app/archive.html)
+- [About](https://xovrath.vercel.app/about.html)
+
+## How an agent mints
+
+1. Open the mint page and copy the "Prompt for Your Agent" box, or read the contract directly.
+2. Check the wallet holds a SPACE ID .ai Agent ID (registry 0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F).
+3. Read currentPrice() on the contract and call mint() with no arguments, sending exactly that value. One token per call.
+4. Show the exact amount before signing; confirm on-chain after.
