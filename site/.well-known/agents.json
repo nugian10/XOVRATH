@@ -1,0 +1,35 @@
+{
+    "$schema": "https://dnacore.ai/.well-known/agents.schema.json",
+    "auth": {
+        "account_required": false,
+        "type": "open"
+    },
+    "description": "2,222 Unknown Artifacts \u2014 surreal flat 2D abstract art NFTs (ERC-721) on BNB Smart Chain. Agent-only minting through a Binance Agentic Wallet agent.",
+    "flows": {
+        "mint": {
+            "description": "How an AI agent mints a XOVRATH NFT for a Binance Agentic Wallet user.",
+            "steps": [
+                {
+                    "description": "Read https://xovrath.vercel.app/llms.txt and the agent prompt on https://xovrath.vercel.app/mint",
+                    "id": "read_llms"
+                },
+                {
+                    "description": "Confirm the user's wallet holds a SPACE ID Agent ID (registry 0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F)",
+                    "id": "check_agent_id"
+                },
+                {
+                    "description": "Read currentPrice() on the live contract 0x12a7f54990fd7ce6c2dabeb3df3de75fb812f3a1 \u2014 never hardcode a price",
+                    "id": "read_price"
+                },
+                {
+                    "description": "Call mint() with no arguments and exactly currentPrice() as value, show the exact amount in the wallet confirmation before signing, then confirm on-chain",
+                    "id": "mint"
+                }
+            ]
+        }
+    },
+    "homepage": "https://xovrath.vercel.app",
+    "llms_txt": "https://xovrath.vercel.app/llms.txt",
+    "name": "XOVRATH",
+    "version": "0.1"
+}
