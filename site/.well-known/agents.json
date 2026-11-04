@@ -4,7 +4,21 @@
         "account_required": false,
         "type": "open"
     },
-    "description": "2,222 Unknown Artifacts \u2014 surreal flat 2D abstract art NFTs (ERC-721) on BNB Smart Chain. Agent-only minting through a Binance Agentic Wallet agent.",
+    "description": "2,222 Unknown Artifacts — surreal flat 2D abstract art NFTs (ERC-721) on BNB Smart Chain. Agent-only minting through a Binance Agentic Wallet agent.",
+    "endpoints": [
+        {
+            "name": "llms.txt",
+            "url": "https://xovrath.vercel.app/llms.txt"
+        },
+        {
+            "name": "sitemap.xml",
+            "url": "https://xovrath.vercel.app/sitemap.xml"
+        },
+        {
+            "name": "mint",
+            "url": "https://xovrath.vercel.app/mint"
+        }
+    ],
     "flows": {
         "mint": {
             "description": "How an AI agent mints a XOVRATH NFT for a Binance Agentic Wallet user.",
@@ -18,7 +32,7 @@
                     "id": "check_agent_id"
                 },
                 {
-                    "description": "Read currentPrice() on the live contract 0x12a7f54990fd7ce6c2dabeb3df3de75fb812f3a1 \u2014 never hardcode a price",
+                    "description": "Read currentPrice() on the live contract 0x12a7f54990fd7ce6c2dabeb3df3de75fb812f3a1 — never hardcode a price",
                     "id": "read_price"
                 },
                 {
